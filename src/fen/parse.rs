@@ -6,7 +6,7 @@ use crate::{
 /// Parse string Forsyth-Edwards Notation
 pub fn parse(fen: String) -> Result<FEN, ParseFenError> {
     if !is_valid(&fen) {
-        return Err(ParseFenError::new("Not a valid FEN string"));
+        return Err(ParseFenError::new("Not a valid FEN string !"));
     }
 
     Ok(FEN {

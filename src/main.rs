@@ -1,8 +1,4 @@
-use crate::game::initialize;
-
-mod fen;
-mod game;
-mod types;
+use chess_game::initialize;
 
 fn main() {
     let _game = initialize();
