@@ -1,10 +1,10 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Color {
     White,
     Black,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceKind {
     Pawn,
     Rook,
@@ -26,7 +26,7 @@ impl Position {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Piece {
     pub kind: PieceKind,
     pub color: Color,
@@ -38,7 +38,7 @@ impl Piece {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Square {
     pub piece: Option<Piece>,
 }

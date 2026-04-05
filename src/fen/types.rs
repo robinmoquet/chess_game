@@ -1,8 +1,8 @@
-use crate::types::{Color, Position};
+use crate::types::{Color, Position, Squares};
 
 #[derive(Debug)]
 pub struct FEN {
-    // pub pieces: Squares,
+    pub squares: Squares,
     pub active_color: Color,
     pub castling_possibility: Option<String>,
     pub en_passant_target: Option<Position>,

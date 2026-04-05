@@ -26,7 +26,7 @@ pub fn is_valid(fen: &String) -> bool {
     {
         return false;
     }
-    if !Regex::new(r"^([a-h1-8]{2})|(-)$")
+    if !Regex::new(r"^([a-h][1-8])|(-)$")
         .unwrap()
         .is_match(parts.next().unwrap())
     {

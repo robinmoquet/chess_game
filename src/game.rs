@@ -4,92 +4,10 @@ use crate::{
 };
 
 pub fn initialize() -> GameState {
-    let _fen = fen::parse(String::from(
+    let fen = fen::parse(String::from(
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     ));
-    let squares: Squares = [
-        [
-            Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Bishop, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Queen, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::King, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Bishop, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),
-        ],
-        [
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
-        ],
-        [
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-        ],
-        [
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-        ],
-        [
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-        ],
-        [
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-            Square::new(None),
-        ],
-        [
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
-        ],
-        [
-            Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Queen, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::King, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
-            Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
-        ],
-    ];
-    let board = Board::new(squares);
+    let board = Board::new(fen.unwrap().squares);
     GameState::new(board, None, None, None)
 }
 

@@ -1,6 +1,7 @@
 use crate::{
     fen::{errors::ParseFenError, types::FEN, validate::is_valid},
-    types::Color,
+    types::{Color, Square, Squares},
+    utils::{char_to_piece, str_to_pos},
 };
 
 /// Parse string Forsyth-Edwards Notation
@@ -8,19 +9,56 @@ pub fn parse(fen: String) -> Result<FEN, ParseFenError> {
     if !is_valid(&fen) {
         return Err(ParseFenError::new("Not a valid FEN string !"));
     }
+    let parts: Vec<&str> = fen.split(" ").collect();
 
     Ok(FEN {
-        active_color: Color::White,
-        castling_possibility: Some(String::new()),
-        en_passant_target: None,
-        halfmove_clock: 0,
-        fullmove_number: 0,
+        squares: str_to_squares(parts[0])?,
+        active_color: if parts[1] == "w" {
+            Color::White
+        } else {
+            Color::Black
+        },
+        castling_possibility: if parts[2] == "-" {
+            None
+        } else {
+            Some(parts[2].to_string())
+        },
+        en_passant_target: if parts[3] == "-" {
+            None
+        } else {
+            Some(str_to_pos(parts[3]).unwrap())
+        },
+        halfmove_clock: parts[4].to_string().parse::<u8>().unwrap(),
+        fullmove_number: parts[5].to_string().parse::<u16>().unwrap(),
     })
+}
+
+pub fn str_to_squares(str: &str) -> Result<Squares, ParseFenError> {
+    let rows: Vec<&str> = str.split("/").collect();
+    if rows.len() != 8 {
+        return Err(ParseFenError::new("Not valid board representation !"));
+    }
+
+    let mut squares: Squares = [[Square::new(None); 8]; 8];
+
+    for (r, row) in rows.iter().enumerate() {
+        let mut c: usize = 0;
+        for char in row.chars() {
+            if char.is_ascii_digit() {
+                c += char.to_digit(10).unwrap() as usize;
+            } else {
+                squares[r][c] = Square::new(Some(char_to_piece(char)));
+                c += 1;
+            }
+        }
+    }
+
+    Ok(squares)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::types::Position;
+    use crate::types::{Piece, PieceKind, Position, Square};
 
     use super::*;
     #[test]
@@ -47,7 +85,92 @@ mod tests {
         assert_eq!(Some(String::from("KQkq")), fen.castling_possibility);
         assert_eq!(None, fen.en_passant_target);
         assert_eq!(0, fen.halfmove_clock);
-        assert_eq!(0, fen.fullmove_number);
+        assert_eq!(1, fen.fullmove_number);
+
+        let squares: Squares = [
+            [
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Queen, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::King, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Queen, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::King, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
+            ],
+        ];
+
+        assert_eq!(squares, fen.squares)
     }
 
     #[test]
@@ -63,6 +186,91 @@ mod tests {
         assert_eq!(Some(Position::new(2, 2)), fen.en_passant_target);
         assert_eq!(0, fen.halfmove_clock);
         assert_eq!(2, fen.fullmove_number);
+
+        let squares: Squares = [
+            [
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Queen, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::King, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Queen, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::King, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
+            ],
+        ];
+
+        assert_eq!(squares, fen.squares);
     }
 
     #[test]
@@ -78,6 +286,91 @@ mod tests {
         assert_eq!(None, fen.en_passant_target);
         assert_eq!(0, fen.halfmove_clock);
         assert_eq!(1, fen.fullmove_number);
+
+        let squares: Squares = [
+            [
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::King, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::White))),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::King, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Queen, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Knight, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+            ],
+            [
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Bishop, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Rook, Color::White))),
+                Square::new(None),
+            ],
+        ];
+
+        assert_eq!(squares, fen.squares);
     }
 
     #[test]
@@ -93,5 +386,90 @@ mod tests {
         assert_eq!(None, fen.en_passant_target);
         assert_eq!(99, fen.halfmove_clock);
         assert_eq!(50, fen.fullmove_number);
+
+        let squares: Squares = [
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::King, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::Black))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+            ],
+            [
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::Pawn, Color::White))),
+                Square::new(None),
+                Square::new(Some(Piece::new(PieceKind::King, Color::White))),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+            [
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+                Square::new(None),
+            ],
+        ];
+
+        assert_eq!(squares, fen.squares);
     }
 }
