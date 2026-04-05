@@ -64,9 +64,16 @@ impl Board {
 
 #[derive(Debug, PartialEq)]
 pub struct Move {
+    pub piece: Piece,
     pub from: Position,
     pub to: Position,
     // pub promotion: Option<PieceKind>,
+}
+
+impl Move {
+    pub fn new(piece: Piece, from: Position, to: Position) -> Self {
+        Move { piece, from, to }
+    }
 }
 
 #[derive(Debug, PartialEq)]

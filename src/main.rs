@@ -1,5 +1,7 @@
-use chess_game::{initialize, str_to_squares};
+use chess_game::{clear, initialize, print};
 
 fn main() {
-    let _game = initialize();
+    clear();
+    let game = initialize();
+    print(&game);
 }

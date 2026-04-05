@@ -20,6 +20,12 @@ pub fn str_to_pos(str: &str) -> Result<Position, String> {
     Ok(Position::new(col, (row.unwrap() - 8).abs() as u8))
 }
 
+pub fn pos_to_str(position: &Position) -> String {
+    let col = (position.col + b'a') as char;
+    let row = 8 - position.row;
+    format!("{}{}", col.to_string(), row)
+}
+
 pub fn char_to_piece(char: char) -> Piece {
     let kind = match char.to_ascii_lowercase() {
         'r' => PieceKind::Rook,
@@ -55,9 +61,83 @@ mod tests {
         assert!(str_to_pos("a9").is_err());
         assert!(str_to_pos("5a").is_err());
     }
-
     #[test]
     fn valid_pos_to_str() {
+        assert_eq!("a8".to_string(), pos_to_str(&Position::new(0, 0)));
+        assert_eq!("a7".to_string(), pos_to_str(&Position::new(0, 1)));
+        assert_eq!("a6".to_string(), pos_to_str(&Position::new(0, 2)));
+        assert_eq!("a5".to_string(), pos_to_str(&Position::new(0, 3)));
+        assert_eq!("a4".to_string(), pos_to_str(&Position::new(0, 4)));
+        assert_eq!("a3".to_string(), pos_to_str(&Position::new(0, 5)));
+        assert_eq!("a2".to_string(), pos_to_str(&Position::new(0, 6)));
+        assert_eq!("a1".to_string(), pos_to_str(&Position::new(0, 7)));
+
+        assert_eq!("b8".to_string(), pos_to_str(&Position::new(1, 0)));
+        assert_eq!("b7".to_string(), pos_to_str(&Position::new(1, 1)));
+        assert_eq!("b6".to_string(), pos_to_str(&Position::new(1, 2)));
+        assert_eq!("b5".to_string(), pos_to_str(&Position::new(1, 3)));
+        assert_eq!("b4".to_string(), pos_to_str(&Position::new(1, 4)));
+        assert_eq!("b3".to_string(), pos_to_str(&Position::new(1, 5)));
+        assert_eq!("b2".to_string(), pos_to_str(&Position::new(1, 6)));
+        assert_eq!("b1".to_string(), pos_to_str(&Position::new(1, 7)));
+
+        assert_eq!("c8".to_string(), pos_to_str(&Position::new(2, 0)));
+        assert_eq!("c7".to_string(), pos_to_str(&Position::new(2, 1)));
+        assert_eq!("c6".to_string(), pos_to_str(&Position::new(2, 2)));
+        assert_eq!("c5".to_string(), pos_to_str(&Position::new(2, 3)));
+        assert_eq!("c4".to_string(), pos_to_str(&Position::new(2, 4)));
+        assert_eq!("c3".to_string(), pos_to_str(&Position::new(2, 5)));
+        assert_eq!("c2".to_string(), pos_to_str(&Position::new(2, 6)));
+        assert_eq!("c1".to_string(), pos_to_str(&Position::new(2, 7)));
+
+        assert_eq!("d8".to_string(), pos_to_str(&Position::new(3, 0)));
+        assert_eq!("d7".to_string(), pos_to_str(&Position::new(3, 1)));
+        assert_eq!("d6".to_string(), pos_to_str(&Position::new(3, 2)));
+        assert_eq!("d5".to_string(), pos_to_str(&Position::new(3, 3)));
+        assert_eq!("d4".to_string(), pos_to_str(&Position::new(3, 4)));
+        assert_eq!("d3".to_string(), pos_to_str(&Position::new(3, 5)));
+        assert_eq!("d2".to_string(), pos_to_str(&Position::new(3, 6)));
+        assert_eq!("d1".to_string(), pos_to_str(&Position::new(3, 7)));
+
+        assert_eq!("e8".to_string(), pos_to_str(&Position::new(4, 0)));
+        assert_eq!("e7".to_string(), pos_to_str(&Position::new(4, 1)));
+        assert_eq!("e6".to_string(), pos_to_str(&Position::new(4, 2)));
+        assert_eq!("e5".to_string(), pos_to_str(&Position::new(4, 3)));
+        assert_eq!("e4".to_string(), pos_to_str(&Position::new(4, 4)));
+        assert_eq!("e3".to_string(), pos_to_str(&Position::new(4, 5)));
+        assert_eq!("e2".to_string(), pos_to_str(&Position::new(4, 6)));
+        assert_eq!("e1".to_string(), pos_to_str(&Position::new(4, 7)));
+
+        assert_eq!("f8".to_string(), pos_to_str(&Position::new(5, 0)));
+        assert_eq!("f7".to_string(), pos_to_str(&Position::new(5, 1)));
+        assert_eq!("f6".to_string(), pos_to_str(&Position::new(5, 2)));
+        assert_eq!("f5".to_string(), pos_to_str(&Position::new(5, 3)));
+        assert_eq!("f4".to_string(), pos_to_str(&Position::new(5, 4)));
+        assert_eq!("f3".to_string(), pos_to_str(&Position::new(5, 5)));
+        assert_eq!("f2".to_string(), pos_to_str(&Position::new(5, 6)));
+        assert_eq!("f1".to_string(), pos_to_str(&Position::new(5, 7)));
+
+        assert_eq!("g8".to_string(), pos_to_str(&Position::new(6, 0)));
+        assert_eq!("g7".to_string(), pos_to_str(&Position::new(6, 1)));
+        assert_eq!("g6".to_string(), pos_to_str(&Position::new(6, 2)));
+        assert_eq!("g5".to_string(), pos_to_str(&Position::new(6, 3)));
+        assert_eq!("g4".to_string(), pos_to_str(&Position::new(6, 4)));
+        assert_eq!("g3".to_string(), pos_to_str(&Position::new(6, 5)));
+        assert_eq!("g2".to_string(), pos_to_str(&Position::new(6, 6)));
+        assert_eq!("g1".to_string(), pos_to_str(&Position::new(6, 7)));
+
+        assert_eq!("h8".to_string(), pos_to_str(&Position::new(7, 0)));
+        assert_eq!("h7".to_string(), pos_to_str(&Position::new(7, 1)));
+        assert_eq!("h6".to_string(), pos_to_str(&Position::new(7, 2)));
+        assert_eq!("h5".to_string(), pos_to_str(&Position::new(7, 3)));
+        assert_eq!("h4".to_string(), pos_to_str(&Position::new(7, 4)));
+        assert_eq!("h3".to_string(), pos_to_str(&Position::new(7, 5)));
+        assert_eq!("h2".to_string(), pos_to_str(&Position::new(7, 6)));
+        assert_eq!("h1".to_string(), pos_to_str(&Position::new(7, 7)));
+    }
+
+    #[test]
+    fn valid_str_to_pos() {
         assert_eq!(str_to_pos("a8"), Ok(Position::new(0, 0)));
         assert_eq!(str_to_pos("a7"), Ok(Position::new(0, 1)));
         assert_eq!(str_to_pos("a6"), Ok(Position::new(0, 2)));
