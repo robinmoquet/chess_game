@@ -1,6 +1,6 @@
 use crate::{
     types::{Color, GameState, Move, Piece, PieceKind, Square},
-    utils::pos_to_str,
+    utils::{castling_to_str, pos_to_str},
 };
 
 pub fn print_board(game: &GameState) {
@@ -21,9 +21,56 @@ pub fn print_board(game: &GameState) {
     println!("     a b c d e f g h\n");
 }
 
-pub fn print_fen(_game: &GameState) {}
+pub fn print_fen(game: &GameState) -> String {
+    let mut board: Vec<String> = vec![];
+    for row in game.board.squares {
+        let mut line = String::new();
+        let mut c = 0;
+        for (i, square) in row.iter().enumerate() {
+            if square.piece == None {
+                c += 1;
+                if i == row.len() - 1 {
+                    line.push_str(&c.to_string());
+                }
+            } else {
+                if c != 0 {
+                    line.push_str(&c.to_string());
+                    c = 0;
+                }
+                let mut piece: String = print_piece_kind(&square.piece.unwrap().kind).to_string();
+                if square.piece.unwrap().color == Color::Black {
+                    piece = piece.to_lowercase();
+                }
+                line.push_str(&piece);
+            }
+        }
+        board.push(line);
+    }
 
-pub fn print_pgn_content(game: &GameState) {
+    let color = if game.current_player == Color::White {
+        "w"
+    } else {
+        "b"
+    };
+    let en_passant_target = game.en_passant_target;
+    let en_passant_target = if en_passant_target == None {
+        String::from("-")
+    } else {
+        pos_to_str(&en_passant_target.unwrap())
+    };
+
+    format!(
+        "{} {} {} {} {} {}",
+        board.join("/"),
+        color,
+        castling_to_str(&game.castling_posibilities),
+        en_passant_target,
+        game.halfmove_clock,
+        game.fullmove_number
+    )
+}
+
+pub fn print_pgn_content(game: &GameState) -> String {
     let pgn_content_str: String = game
         .moves_history
         .iter()
@@ -37,7 +84,7 @@ pub fn print_pgn_content(game: &GameState) {
         })
         .collect::<Vec<String>>()
         .join("");
-    println!("{}\n", pgn_content_str)
+    format!("{}", pgn_content_str)
 }
 
 pub fn print_move(m: &Move) -> String {
@@ -45,16 +92,20 @@ pub fn print_move(m: &Move) -> String {
     if piece.kind == PieceKind::Pawn {
         return pos_to_str(&m.to).to_string();
     }
-    let piece_kind = match piece.kind {
+    let piece_kind = print_piece_kind(&piece.kind);
+
+    format!("{}{}", piece_kind, pos_to_str(&m.to))
+}
+
+pub fn print_piece_kind(kind: &PieceKind) -> &'static str {
+    match kind {
         PieceKind::Rook => "R",
         PieceKind::Knight => "N",
         PieceKind::Bishop => "B",
         PieceKind::King => "K",
         PieceKind::Queen => "Q",
         PieceKind::Pawn => "P",
-    };
-
-    format!("{}{}", piece_kind, pos_to_str(&m.to))
+    }
 }
 
 pub fn print_square(square: Square) -> &'static str {

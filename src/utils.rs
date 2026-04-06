@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::types::{Color, Piece, PieceKind, Position};
+use crate::types::{Castling, Color, Piece, PieceKind, Position};
 
 pub fn str_to_pos(str: &str) -> Result<Position, String> {
     let err = String::from("String must be a valid chess position. Ex: e4, g6, ...");
@@ -41,6 +41,47 @@ pub fn char_to_piece(char: char) -> Piece {
         Color::Black
     };
     Piece::new(kind, color)
+}
+
+pub fn str_to_castling(str: &str) -> Castling {
+    let mut k = (false, false);
+    let mut q = (false, false);
+
+    if str.contains('K') {
+        k.0 = true
+    }
+    if str.contains('k') {
+        k.1 = true
+    }
+    if str.contains('Q') {
+        q.0 = true
+    }
+    if str.contains('q') {
+        q.1 = true
+    }
+
+    Castling::new(k, q)
+}
+pub fn castling_to_str(castling: &Castling) -> String {
+    let mut r = String::new();
+
+    if castling.kingside.0 {
+        r.push('K');
+    }
+    if castling.queenside.0 {
+        r.push('Q');
+    }
+    if castling.kingside.1 {
+        r.push('k');
+    }
+    if castling.queenside.1 {
+        r.push('q');
+    }
+
+    if r.len() == 0 {
+        r.push('-');
+    }
+    r
 }
 
 #[cfg(test)]
@@ -260,6 +301,74 @@ mod tests {
         assert_eq!(
             Piece::new(PieceKind::Queen, Color::Black),
             char_to_piece('q')
+        );
+    }
+
+    #[test]
+    fn valid_str_to_castling() {
+        assert_eq!(
+            Castling::new((false, false), (false, false)),
+            str_to_castling("-")
+        );
+        assert_eq!(
+            Castling::new((true, false), (false, false)),
+            str_to_castling("K")
+        );
+        assert_eq!(
+            Castling::new((false, false), (true, false)),
+            str_to_castling("Q")
+        );
+        assert_eq!(
+            Castling::new((false, true), (false, false)),
+            str_to_castling("k")
+        );
+        assert_eq!(
+            Castling::new((false, false), (false, true)),
+            str_to_castling("q")
+        );
+        assert_eq!(
+            Castling::new((true, false), (true, false)),
+            str_to_castling("KQ")
+        );
+        assert_eq!(
+            Castling::new((false, true), (false, true)),
+            str_to_castling("kq")
+        );
+        assert_eq!(
+            Castling::new((true, true), (true, false)),
+            str_to_castling("KQk")
+        );
+        assert_eq!(
+            Castling::new((true, false), (true, true)),
+            str_to_castling("KQq")
+        );
+        assert_eq!(
+            Castling::new((true, true), (true, true)),
+            str_to_castling("KQkq")
+        );
+    }
+
+    #[test]
+    fn valid_castling_to_str() {
+        assert_eq!(
+            "-",
+            castling_to_str(&Castling::new((false, false), (false, false)))
+        );
+        assert_eq!(
+            "K",
+            castling_to_str(&Castling::new((true, false), (false, false)))
+        );
+        assert_eq!(
+            "Kk",
+            castling_to_str(&Castling::new((true, true), (false, false)))
+        );
+        assert_eq!(
+            "Qq",
+            castling_to_str(&Castling::new((false, false), (true, true)))
+        );
+        assert_eq!(
+            "KQkq",
+            castling_to_str(&Castling::new((true, true), (true, true)))
         );
     }
 }

@@ -18,7 +18,7 @@ pub fn parse(fen: String) -> Result<FEN, ParseFenError> {
         } else {
             Color::Black
         },
-        castling_possibility: if parts[2] == "-" {
+        castling_possibilities: if parts[2] == "-" {
             None
         } else {
             Some(parts[2].to_string())
@@ -82,7 +82,7 @@ mod tests {
         assert!(fen.is_ok());
         let fen = fen.unwrap();
         assert_eq!(Color::White, fen.active_color);
-        assert_eq!(Some(String::from("KQkq")), fen.castling_possibility);
+        assert_eq!(Some(String::from("KQkq")), fen.castling_possibilities);
         assert_eq!(None, fen.en_passant_target);
         assert_eq!(0, fen.halfmove_clock);
         assert_eq!(1, fen.fullmove_number);
@@ -182,7 +182,7 @@ mod tests {
         assert!(fen.is_ok());
         let fen = fen.unwrap();
         assert_eq!(Color::White, fen.active_color);
-        assert_eq!(Some(String::from("KQkq")), fen.castling_possibility);
+        assert_eq!(Some(String::from("KQkq")), fen.castling_possibilities);
         assert_eq!(Some(Position::new(2, 2)), fen.en_passant_target);
         assert_eq!(0, fen.halfmove_clock);
         assert_eq!(2, fen.fullmove_number);
@@ -282,7 +282,7 @@ mod tests {
         assert!(fen.is_ok());
         let fen = fen.unwrap();
         assert_eq!(Color::White, fen.active_color);
-        assert_eq!(None, fen.castling_possibility);
+        assert_eq!(None, fen.castling_possibilities);
         assert_eq!(None, fen.en_passant_target);
         assert_eq!(0, fen.halfmove_clock);
         assert_eq!(1, fen.fullmove_number);
@@ -382,7 +382,7 @@ mod tests {
         assert!(fen.is_ok());
         let fen = fen.unwrap();
         assert_eq!(Color::Black, fen.active_color);
-        assert_eq!(None, fen.castling_possibility);
+        assert_eq!(None, fen.castling_possibilities);
         assert_eq!(None, fen.en_passant_target);
         assert_eq!(99, fen.halfmove_clock);
         assert_eq!(50, fen.fullmove_number);

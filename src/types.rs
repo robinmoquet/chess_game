@@ -14,7 +14,7 @@ pub enum PieceKind {
     King,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Position {
     pub col: u8,
     pub row: u8,
@@ -85,12 +85,38 @@ pub enum GameStatus {
     Draw,
 }
 
+/// Castling posibilities representation
+/// First is for white and second for black
+///
+/// Note : This representation is only for track Rook or King move, not if King is in Check or else
+///
+/// Exemple :
+/// kingside: (true, false) -> white can kingside castling and black cannot
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Castling {
+    pub kingside: (bool, bool),
+    pub queenside: (bool, bool),
+}
+
+impl Castling {
+    pub fn new(kingside: (bool, bool), queenside: (bool, bool)) -> Self {
+        Castling {
+            kingside,
+            queenside,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct GameState {
     pub board: Board,
     pub current_player: Color,
     pub moves_history: Vec<Move>,
     pub status: GameStatus,
+    pub en_passant_target: Option<Position>,
+    pub halfmove_clock: u8,
+    pub fullmove_number: u16,
+    pub castling_posibilities: Castling,
 }
 
 impl GameState {
@@ -99,16 +125,28 @@ impl GameState {
         current_player: Option<Color>,
         status: Option<GameStatus>,
         moves_history: Option<Vec<Move>>,
+        en_passant_target: Option<Position>,
+        halfmove_clock: Option<u8>,
+        fullmove_number: Option<u16>,
+        castling_posibilities: Option<Castling>,
     ) -> Self {
         let current_player = current_player.unwrap_or_else(|| Color::White);
         let status = status.unwrap_or_else(|| GameStatus::InProgress);
         let moves_history = moves_history.unwrap_or_else(|| Vec::new());
+        let halfmove_clock = halfmove_clock.unwrap_or_else(|| 0);
+        let fullmove_number = fullmove_number.unwrap_or_else(|| 1);
+        let castling_posibilities =
+            castling_posibilities.unwrap_or_else(|| Castling::new((true, true), (true, true)));
 
         GameState {
             board,
             current_player,
             moves_history,
             status,
+            en_passant_target,
+            halfmove_clock,
+            fullmove_number,
+            castling_posibilities,
         }
     }
 }

@@ -3,11 +3,14 @@ use dialoguer::Input;
 use crate::{
     fen, printer,
     types::{Board, Color, GameState, Move, Piece, PieceKind, Position},
+    utils::str_to_castling,
 };
 
 pub fn initialize() -> GameState {
     let fen = fen::parse(String::from(
+        // "1B6/2n5/p1N1P2R/P1K3N1/4Pk2/1Q2p2p/6nP/1B4R1 w - - 0 1",
         "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1",
+        // "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     ))
     .unwrap();
 
@@ -38,6 +41,13 @@ pub fn initialize() -> GameState {
                 Position::new(2, 2),
             ),
         ]),
+        fen.en_passant_target,
+        Some(fen.halfmove_clock),
+        Some(fen.fullmove_number),
+        Some(str_to_castling(
+            &fen.castling_possibilities
+                .unwrap_or_else(|| String::from("-")),
+        )),
     )
 }
 
@@ -49,8 +59,8 @@ pub fn print(game: &GameState) {
     };
     println!("Chess Game : {} to move\n", color);
     printer::print_board(game);
-    printer::print_fen(game);
-    printer::print_pgn_content(game);
+    println!("{}", printer::print_fen(game));
+    println!("{}\n", printer::print_pgn_content(game));
     let action = ask_action();
     println!("{}", action);
 }
