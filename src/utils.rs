@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::types::{Castling, Color, Piece, PieceKind, Position};
+use crate::types::{Castling, Color, Piece, PieceKind, Position, Squares};
 
 pub fn str_to_pos(str: &str) -> Result<Position, String> {
     let err = String::from("String must be a valid chess position. Ex: e4, g6, ...");
@@ -82,6 +82,10 @@ pub fn castling_to_str(castling: &Castling) -> String {
         r.push('-');
     }
     r
+}
+
+pub fn is_empty_square(squares: &Squares, pos: &Position) -> bool {
+    squares[pos.row as usize][pos.col as usize].piece.is_none()
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 mod fen;
 mod game;
-mod move_posibilities;
+mod move_compute;
 mod printer;
 mod types;
 mod utils;

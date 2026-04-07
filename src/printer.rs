@@ -63,7 +63,7 @@ pub fn print_fen(game: &GameState) -> String {
         "{} {} {} {} {} {}",
         board.join("/"),
         color,
-        castling_to_str(&game.castling_posibilities),
+        castling_to_str(&game.castling_possibilities),
         en_passant_target,
         game.halfmove_clock,
         game.fullmove_number

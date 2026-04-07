@@ -85,7 +85,7 @@ pub enum GameStatus {
     Draw,
 }
 
-/// Castling posibilities representation
+/// Castling possibilities representation
 /// First is for white and second for black
 ///
 /// Note : This representation is only for track Rook or King move, not if King is in Check or else
@@ -116,7 +116,7 @@ pub struct GameState {
     pub en_passant_target: Option<Position>,
     pub halfmove_clock: u8,
     pub fullmove_number: u16,
-    pub castling_posibilities: Castling,
+    pub castling_possibilities: Castling,
 }
 
 impl GameState {
@@ -128,15 +128,15 @@ impl GameState {
         en_passant_target: Option<Position>,
         halfmove_clock: Option<u8>,
         fullmove_number: Option<u16>,
-        castling_posibilities: Option<Castling>,
+        castling_possibilities: Option<Castling>,
     ) -> Self {
         let current_player = current_player.unwrap_or_else(|| Color::White);
         let status = status.unwrap_or_else(|| GameStatus::InProgress);
         let moves_history = moves_history.unwrap_or_else(|| Vec::new());
         let halfmove_clock = halfmove_clock.unwrap_or_else(|| 0);
         let fullmove_number = fullmove_number.unwrap_or_else(|| 1);
-        let castling_posibilities =
-            castling_posibilities.unwrap_or_else(|| Castling::new((true, true), (true, true)));
+        let castling_possibilities =
+            castling_possibilities.unwrap_or_else(|| Castling::new((true, true), (true, true)));
 
         GameState {
             board,
@@ -146,7 +146,7 @@ impl GameState {
             en_passant_target,
             halfmove_clock,
             fullmove_number,
-            castling_posibilities,
+            castling_possibilities,
         }
     }
 }

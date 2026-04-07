@@ -3,16 +3,14 @@ use regex::Regex;
 
 use crate::{
     fen,
-    move_posibilities::move_posibilities,
+    move_compute::{forward_one_square, move_delta, move_possibilities},
     printer,
     types::{Board, Color, GameState, GameStatus, Move, Piece, PieceKind, Position, Square},
-    utils::{char_to_piece, str_to_castling, str_to_pos},
+    utils::{char_to_piece, pos_to_str, str_to_castling, str_to_pos},
 };
 
 pub fn initialize() -> GameState {
     let fen = fen::parse(String::from(
-        // "1B6/2n5/p1N1P2R/P1K3N1/4Pk2/1Q2p2p/6nP/1B4R1 w - - 0 1",
-        // "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1",
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     ))
     .unwrap();
@@ -46,8 +44,12 @@ pub fn play(mut game: GameState) {
             );
         }
         game = do_action(action, game);
-        break;
 
+        game.current_player = if game.current_player == Color::White {
+            Color::Black
+        } else {
+            Color::White
+        };
         if let GameStatus::Checkmate(_) = game.status {
             // end();
             break;
@@ -125,30 +127,35 @@ pub fn do_move(action: &String, mut game: GameState) -> GameState {
     game.board.squares[to.row as usize][to.col as usize] = Square::new(Some(piece));
     game.moves_history.push(Move::new(piece, from, to));
 
-    println!("{:?}", piece);
-    println!("{:?}", to);
+    if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 {
+        game.en_passant_target = Some(forward_one_square(&from, &piece.color));
+    } else {
+        game.en_passant_target = None;
+    }
+
+    // println!("{:?}", pos_to_str(&from));
+    // println!("{:?}", piece);
+    // println!("{:?}", pos_to_str(&to));
 
     game
 }
 
 /// We must provide a destination (to: &Position) for identify Bishop, Knight, Rook
 pub fn get_current_pos(game: &GameState, piece: &Piece, to: &Position) -> Position {
-    let mut posibilities: Vec<Position> = Vec::new();
+    let mut possibilities: Vec<Position> = Vec::new();
     for (r, row) in game.board.squares.iter().enumerate() {
         for (c, square) in row.iter().enumerate() {
             if square.piece == Some(*piece) {
-                posibilities.push(Position::new(c as u8, r as u8));
+                possibilities.push(Position::new(c as u8, r as u8));
             }
         }
     }
 
-    println!("{:?}", posibilities);
-
-    for posibility in posibilities {
-        let moves = move_posibilities(game, piece, posibility);
+    for possibility in possibilities {
+        let moves = move_possibilities(game, piece, &possibility);
         let find = moves.iter().find(|m| *m == to);
         if find.is_some() {
-            return posibility;
+            return possibility;
         }
     }
 
