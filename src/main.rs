@@ -1,7 +1,5 @@
-use chess_game::{clear, initialize, print};
+use chess_game::{initialize, play};
 
 fn main() {
-    clear();
-    let game = initialize();
-    print(&game);
+    play(initialize());
 }
