@@ -2,7 +2,8 @@ use regex::Regex;
 
 use crate::{
     errors::ActionError,
-    types::{Action, ActionKind, Color, PieceKind, Position},
+    types::{Action, ActionKind, Color, DisambigPosition, PieceKind, Position},
+    utils::{char_to_piece, str_to_pos},
 };
 
 pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
@@ -21,11 +22,12 @@ pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
             # Castling
             (?P<castle>O-O(?:-O)?)
         )
-        (?P<check>[+#])?
+        (?P<check>[+\#])?
         $
     ";
-
-    Ok(Action::new(
+    let re = Regex::new(pattern).ok().unwrap();
+    let caps = re.captures(san).unwrap();
+    let mut action = Action::new(
         Position::new(0, 0),
         ActionKind::Move,
         PieceKind::Pawn,
@@ -33,7 +35,59 @@ pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
         false,
         false,
         None,
-    ))
+    );
+
+    if let Some(c) = caps.name("check") {
+        if c.as_str() == "#" {
+            action.checkmate = true;
+        } else {
+            action.check = true;
+        }
+    }
+
+    if let Some(c) = caps.name("castle") {
+        action.piece_kind = PieceKind::King;
+        if c.as_str() == "O-O-O" {
+            action.kind = ActionKind::Queencastling;
+            action.to = if color == Some(Color::White) {
+                str_to_pos("c1").unwrap()
+            } else {
+                str_to_pos("c8").unwrap()
+            }
+        } else {
+            action.kind = ActionKind::Kingcastling;
+            action.to = if color == Some(Color::White) {
+                str_to_pos("g1").unwrap()
+            } else {
+                str_to_pos("g8").unwrap()
+            }
+        }
+
+        return Ok(action);
+    }
+
+    if let Some(c) = caps.name("piece") {
+        action.piece_kind = char_to_piece(c.as_str().chars().last().unwrap()).kind;
+        if caps.name("cap").is_some() {
+            action.kind = ActionKind::Capture
+        }
+        if let Some(t) = caps.name("to") {
+            action.to = str_to_pos(t.as_str()).unwrap();
+        }
+    } else {
+        if caps.name("p_cap").is_some() {
+            action.kind = ActionKind::Capture
+        }
+        if let Some(t) = caps.name("p_to") {
+            action.to = str_to_pos(t.as_str()).unwrap();
+        }
+        if let Some(pr) = caps.name("p_prom") {
+            action.promotion =
+                Some(char_to_piece(pr.as_str().replace("=", "").chars().last().unwrap()).kind);
+        }
+    }
+
+    Ok(action)
 }
 
 #[cfg(test)]

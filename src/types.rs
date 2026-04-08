@@ -1,3 +1,5 @@
+use std::default;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Color {
     White,
