@@ -5,7 +5,7 @@ use crate::{
     types::{GameState, Piece, PieceKind, Position},
 };
 
-pub use utils::{forward_one_square, move_delta};
+pub use utils::{backward_one_square, forward_one_square, move_delta};
 
 pub fn move_possibilities(game: &GameState, piece: &Piece, pos: &Position) -> Vec<Position> {
     match piece.kind {

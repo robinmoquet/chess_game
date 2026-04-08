@@ -8,6 +8,14 @@ pub fn forward_one_square(pos: &Position, color: &Color) -> Position {
     }
 }
 
+pub fn backward_one_square(pos: &Position, color: &Color) -> Position {
+    if *color == Color::White {
+        return Position::new(pos.col, pos.row + 1);
+    } else {
+        return Position::new(pos.col, pos.row - 1);
+    }
+}
+
 pub fn forward_left_one_square(pos: &Position, color: &Color) -> Position {
     if *color == Color::White {
         return Position::new(pos.col - 1, pos.row - 1);
@@ -65,6 +73,26 @@ mod tests {
         assert_eq!(
             str_to_pos("a5").unwrap(),
             forward_one_square(&str_to_pos("a6").unwrap(), &Color::Black)
+        );
+    }
+
+    #[test]
+    fn move_backward() {
+        assert_eq!(
+            str_to_pos("e2").unwrap(),
+            backward_one_square(&str_to_pos("e3").unwrap(), &Color::White)
+        );
+        assert_eq!(
+            str_to_pos("e4").unwrap(),
+            backward_one_square(&str_to_pos("e3").unwrap(), &Color::Black)
+        );
+        assert_eq!(
+            str_to_pos("a5").unwrap(),
+            backward_one_square(&str_to_pos("a6").unwrap(), &Color::White)
+        );
+        assert_eq!(
+            str_to_pos("a7").unwrap(),
+            backward_one_square(&str_to_pos("a6").unwrap(), &Color::Black)
         );
     }
 

@@ -1,12 +1,15 @@
 use dialoguer::{Confirm, Input};
-use regex::Regex;
 
 use crate::{
+    errors::ActionError,
     fen,
-    move_compute::{forward_one_square, move_delta, move_possibilities},
-    printer,
-    types::{Board, Color, GameState, GameStatus, Move, Piece, PieceKind, Position, Square},
-    utils::{char_to_piece, pos_to_str, str_to_castling, str_to_pos},
+    move_compute::{backward_one_square, forward_one_square, move_delta, move_possibilities},
+    printer, san,
+    types::{
+        Action, ActionKind, Board, Color, GameState, GameStatus, Move, Piece, PieceKind, Position,
+        Square,
+    },
+    utils::str_to_castling,
 };
 
 pub fn initialize() -> GameState {
@@ -35,15 +38,17 @@ pub fn play(mut game: GameState) {
     loop {
         clear();
         print(&game);
-        let mut action = String::new();
-        while !(valid_action(&action)) {
-            action = ask_action();
-            println!(
-                "Move invalid : {}, (ex: e4, g6, Nf3, surrend, draw)",
-                action
-            );
+        loop {
+            let action = ask_action();
+            let (res, current_game) = do_action(action, game);
+            game = current_game;
+            match res {
+                Ok(_) => break,
+                Err(e) => {
+                    println!("{}", e.message)
+                }
+            }
         }
-        game = do_action(action, game);
 
         game.current_player = if game.current_player == Color::White {
             Color::Black
@@ -76,22 +81,17 @@ pub fn ask_action() -> String {
         .unwrap()
 }
 
-pub fn valid_action(action: &String) -> bool {
-    if action == "surrend" {
-        return true;
+pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, GameState) {
+    let action = san::parse(&action, Some(game.current_player));
+    if let Err(e) = action {
+        return (Err(e), game);
+    }
+    let action = action.unwrap();
+    if action.kind == ActionKind::Surrend && confirm("Do you really want to give up ?") {
+        return (Ok(()), surrend(game));
     }
 
-    Regex::new(r"^([a-h][1-8])|([RNBQK][a-h][1-8])$")
-        .unwrap()
-        .is_match(action)
-}
-
-pub fn do_action(action: String, game: GameState) -> GameState {
-    if action == "surrend" && confirm("Do you really want to give up ?") {
-        return surrend(game);
-    }
-
-    do_move(&action, game)
+    (Ok(()), do_move(&action, game))
 }
 
 pub fn surrend(mut game: GameState) -> GameState {
@@ -103,29 +103,23 @@ pub fn confirm(prompt: &str) -> bool {
     Confirm::new().with_prompt(prompt).interact().unwrap()
 }
 
-pub fn do_move(action: &String, mut game: GameState) -> GameState {
-    let piece_str = if action.len() == 3 {
-        action.clone().chars().nth(0).unwrap()
-    } else {
-        'p'
-    };
-    let piece_str = if game.current_player == Color::White {
-        piece_str.to_ascii_uppercase()
-    } else {
-        piece_str
-    };
-    let piece: Piece = char_to_piece(piece_str);
-    let to_str: &String = if action.len() == 3 {
-        &action[1..].to_string()
-    } else {
-        action
-    };
-    let to = str_to_pos(to_str).unwrap();
+pub fn do_move(action: &Action, mut game: GameState) -> GameState {
+    let piece = Piece::new(action.piece_kind, game.current_player);
+    let to = action.to;
     let from = get_current_pos(&game, &piece, &to);
 
     game.board.squares[from.row as usize][from.col as usize] = Square::new(None);
     game.board.squares[to.row as usize][to.col as usize] = Square::new(Some(piece));
     game.moves_history.push(Move::new(piece, from, to));
+
+    // move is capture "en passant"
+    if piece.kind == PieceKind::Pawn
+        && game.en_passant_target != None
+        && to == game.en_passant_target.unwrap()
+    {
+        let pawn = backward_one_square(&to, &piece.color);
+        game.board.squares[pawn.row as usize][pawn.col as usize] = Square::new(None);
+    }
 
     if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 {
         game.en_passant_target = Some(forward_one_square(&from, &piece.color));
@@ -140,25 +134,42 @@ pub fn do_move(action: &String, mut game: GameState) -> GameState {
     game
 }
 
-/// We must provide a destination (to: &Position) for identify Bishop, Knight, Rook
-pub fn get_current_pos(game: &GameState, piece: &Piece, to: &Position) -> Position {
-    let mut possibilities: Vec<Position> = Vec::new();
+/// The goal of this function is to provide the current position of the
+/// piece the user wants to move.
+///
+/// For example, if the user provides "e4", they are implicitly saying
+/// "I want to move my pawn from e2 (or e3) to e4".
+/// "get_current_pos" must find all pieces of the same type as the "piece"
+/// parameter and find which one can move to "e4".
+pub fn get_current_pos(game: &GameState, piece: &Piece, target_pos: &Position) -> Position {
+    // Find all pieces with same PieceKind an Color
+    let mut pieces_possibilities: Vec<Position> = Vec::new();
     for (r, row) in game.board.squares.iter().enumerate() {
         for (c, square) in row.iter().enumerate() {
             if square.piece == Some(*piece) {
-                possibilities.push(Position::new(c as u8, r as u8));
+                pieces_possibilities.push(Position::new(c as u8, r as u8));
             }
         }
     }
 
-    for possibility in possibilities {
-        let moves = move_possibilities(game, piece, &possibility);
-        let find = moves.iter().find(|m| *m == to);
+    let mut res = Vec::new();
+
+    // For each piece_possibility, we check the available moves. If we find
+    // the target position, we store the piece.
+    for piece_possibility in pieces_possibilities {
+        let moves = move_possibilities(game, piece, &piece_possibility);
+        let find = moves.iter().find(|m| *m == target_pos);
         if find.is_some() {
-            return possibility;
+            res.push(piece_possibility);
         }
     }
 
+    // if single possibility return it, else we must find the good one
+    if res.len() == 1 {
+        return res[0];
+    }
+
+    println!("{:?}", res);
     panic!("No initial position find");
 }
 

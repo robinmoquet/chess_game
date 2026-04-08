@@ -26,6 +26,24 @@ impl Position {
     }
 }
 
+/// Use for SAN parser
+/// Ex: Ngf3 -> Knight in g col move to f3
+/// col and row is optional, but one of two must be write.
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct DisambigPosition {
+    pub col: Option<u8>,
+    pub row: Option<u8>,
+}
+
+impl DisambigPosition {
+    pub fn new(col: Option<u8>, row: Option<u8>) -> Self {
+        if col.is_none() && row.is_none() {
+            panic!("You must provide a valid col OR row");
+        }
+        DisambigPosition { col, row }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Piece {
     pub kind: PieceKind,
@@ -103,6 +121,49 @@ impl Castling {
         Castling {
             kingside,
             queenside,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ActionKind {
+    Surrend,
+    Move,
+    Capture,
+    Kingcastling,
+    Queencastling,
+    Draw,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Action {
+    pub kind: ActionKind,
+    pub to: Position,
+    pub from: Option<DisambigPosition>,
+    pub piece_kind: PieceKind,
+    pub check: bool,
+    pub checkmate: bool,
+    pub promotion: Option<PieceKind>,
+}
+
+impl Action {
+    pub fn new(
+        to: Position,
+        kind: ActionKind,
+        piece_kind: PieceKind,
+        from: Option<DisambigPosition>,
+        check: bool,
+        checkmate: bool,
+        promotion: Option<PieceKind>,
+    ) -> Self {
+        Action {
+            to,
+            kind,
+            piece_kind,
+            from,
+            check,
+            checkmate,
+            promotion,
         }
     }
 }
