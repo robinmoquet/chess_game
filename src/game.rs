@@ -91,7 +91,7 @@ pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, G
         return (Ok(()), surrend(game));
     }
 
-    (Ok(()), do_move(&action, game))
+    do_move(&action, game)
 }
 
 pub fn surrend(mut game: GameState) -> GameState {
@@ -103,10 +103,14 @@ pub fn confirm(prompt: &str) -> bool {
     Confirm::new().with_prompt(prompt).interact().unwrap()
 }
 
-pub fn do_move(action: &Action, mut game: GameState) -> GameState {
+pub fn do_move(action: &Action, mut game: GameState) -> (Result<(), ActionError>, GameState) {
     let piece = Piece::new(action.piece_kind, game.current_player);
     let to = action.to;
-    let from = get_current_pos(&game, &piece, &to);
+    let from = get_current_pos(&game, &action);
+    if let Err(e) = from {
+        return (Err(e), game);
+    }
+    let from = from.unwrap();
 
     game.board.squares[from.row as usize][from.col as usize] = Square::new(None);
     game.board.squares[to.row as usize][to.col as usize] = Square::new(Some(piece));
@@ -121,7 +125,7 @@ pub fn do_move(action: &Action, mut game: GameState) -> GameState {
         game.board.squares[pawn.row as usize][pawn.col as usize] = Square::new(None);
     }
 
-    if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 {
+    if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 && from.col == to.col {
         game.en_passant_target = Some(forward_one_square(&from, &piece.color));
     } else {
         game.en_passant_target = None;
@@ -131,7 +135,7 @@ pub fn do_move(action: &Action, mut game: GameState) -> GameState {
     // println!("{:?}", piece);
     // println!("{:?}", pos_to_str(&to));
 
-    game
+    (Ok(()), game)
 }
 
 /// The goal of this function is to provide the current position of the
@@ -141,12 +145,13 @@ pub fn do_move(action: &Action, mut game: GameState) -> GameState {
 /// "I want to move my pawn from e2 (or e3) to e4".
 /// "get_current_pos" must find all pieces of the same type as the "piece"
 /// parameter and find which one can move to "e4".
-pub fn get_current_pos(game: &GameState, piece: &Piece, target_pos: &Position) -> Position {
+pub fn get_current_pos(game: &GameState, action: &Action) -> Result<Position, ActionError> {
     // Find all pieces with same PieceKind an Color
+    let piece = Piece::new(action.piece_kind, game.current_player);
     let mut pieces_possibilities: Vec<Position> = Vec::new();
     for (r, row) in game.board.squares.iter().enumerate() {
         for (c, square) in row.iter().enumerate() {
-            if square.piece == Some(*piece) {
+            if square.piece == Some(piece) {
                 pieces_possibilities.push(Position::new(c as u8, r as u8));
             }
         }
@@ -157,20 +162,39 @@ pub fn get_current_pos(game: &GameState, piece: &Piece, target_pos: &Position) -
     // For each piece_possibility, we check the available moves. If we find
     // the target position, we store the piece.
     for piece_possibility in pieces_possibilities {
-        let moves = move_possibilities(game, piece, &piece_possibility);
-        let find = moves.iter().find(|m| *m == target_pos);
+        let moves = move_possibilities(game, &piece, &piece_possibility);
+        let find = moves.iter().find(|m| **m == action.to);
         if find.is_some() {
             res.push(piece_possibility);
         }
     }
 
+    if res.len() == 0 {
+        return Err(ActionError::new("No initial position find"));
+    }
+
     // if single possibility return it, else we must find the good one
     if res.len() == 1 {
-        return res[0];
+        return Ok(res[0]);
+    }
+
+    let from = action.from.unwrap();
+    let res = res.iter().find(|p| {
+        if from.col.is_some() && from.row.is_some() {
+            return p.col == from.col.unwrap() && p.row == from.row.unwrap();
+        } else if from.col.is_some() {
+            return p.col == from.col.unwrap();
+        }
+
+        return p.row == from.row.unwrap();
+    });
+
+    if res.is_some() {
+        return Ok(res.unwrap().clone());
     }
 
     println!("{:?}", res);
-    panic!("No initial position find");
+    return Err(ActionError::new("No initial position find"));
 }
 
 pub fn clear() {

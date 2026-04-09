@@ -1,13 +1,13 @@
 use regex::Regex;
 
-use crate::types::{Castling, Color, Piece, PieceKind, Position, Squares};
+use crate::types::{Castling, Color, DisambigPosition, Piece, PieceKind, Position, Squares};
 
 pub fn str_to_pos(str: &str) -> Result<Position, String> {
     let err = String::from("String must be a valid chess position. Ex: e4, g6, ...");
     if str.len() != 2 {
         return Err(err);
     }
-    if !Regex::new(r"^([a-h][1-8])|(-)$").unwrap().is_match(str) {
+    if !Regex::new(r"^([a-h][1-8])$").unwrap().is_match(str) {
         return Err(err);
     }
     let mut chars = str.chars().into_iter();
@@ -24,6 +24,46 @@ pub fn pos_to_str(position: &Position) -> String {
     let col = (position.col + b'a') as char;
     let row = 8 - position.row;
     format!("{}{}", col.to_string(), row)
+}
+
+pub fn str_to_disambig(str: &str) -> Result<DisambigPosition, String> {
+    let err = "str must be a valid chess disambig position. Ex: a, g, 1, 5, e4, ...".to_string();
+
+    if str.len() != 1 && str.len() != 2 {
+        return Err(err);
+    }
+    if !Regex::new(r"^([a-h])|([1-8])|([a-h][1-8])$")
+        .unwrap()
+        .is_match(str)
+    {
+        return Err(err);
+    }
+
+    if str.len() == 2 {
+        let p = str_to_pos(str).unwrap();
+        return Ok(DisambigPosition::new(Some(p.col), Some(p.row)));
+    }
+
+    let str = str.chars().last().unwrap();
+    if str.is_digit(10) {
+        let r = str.to_digit(10).unwrap() as i8;
+        return Ok(DisambigPosition::new(None, Some((r - 8).abs() as u8)));
+    }
+
+    Ok(DisambigPosition::new(Some((str as u8) - b'a'), None))
+}
+
+pub fn disambig_to_str(disambig: &DisambigPosition) -> String {
+    if disambig.col.is_some() && disambig.row.is_some() {
+        return pos_to_str(&Position::new(disambig.col.unwrap(), disambig.row.unwrap()));
+    }
+
+    if disambig.col.is_some() {
+        return format!("{}", ((disambig.col.unwrap() + b'a') as char).to_string());
+    }
+
+    let r = 8 - disambig.row.unwrap();
+    format!("{}", r)
 }
 
 pub fn char_to_piece(char: char) -> Piece {
@@ -106,6 +146,7 @@ mod tests {
         assert!(str_to_pos("a9").is_err());
         assert!(str_to_pos("5a").is_err());
     }
+
     #[test]
     fn valid_pos_to_str() {
         assert_eq!("a8".to_string(), pos_to_str(&Position::new(0, 0)));
@@ -254,6 +295,170 @@ mod tests {
         assert_eq!(str_to_pos("h3"), Ok(Position::new(7, 5)));
         assert_eq!(str_to_pos("h2"), Ok(Position::new(7, 6)));
         assert_eq!(str_to_pos("h1"), Ok(Position::new(7, 7)));
+    }
+
+    #[test]
+    fn disambig_not_valid() {
+        assert!(str_to_disambig("").is_err());
+        assert!(str_to_disambig("foo").is_err());
+        assert!(str_to_disambig("i").is_err());
+        assert!(str_to_disambig("9").is_err());
+    }
+
+    #[test]
+    fn valid_str_tot_disambig() {
+        assert_eq!(
+            DisambigPosition::new(Some(0), None),
+            str_to_disambig("a").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(1), None),
+            str_to_disambig("b").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(2), None),
+            str_to_disambig("c").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(3), None),
+            str_to_disambig("d").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(4), None),
+            str_to_disambig("e").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(5), None),
+            str_to_disambig("f").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(6), None),
+            str_to_disambig("g").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(7), None),
+            str_to_disambig("h").unwrap()
+        );
+
+        assert_eq!(
+            DisambigPosition::new(None, Some(7)),
+            str_to_disambig("1").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(6)),
+            str_to_disambig("2").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(5)),
+            str_to_disambig("3").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(4)),
+            str_to_disambig("4").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(3)),
+            str_to_disambig("5").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(2)),
+            str_to_disambig("6").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(1)),
+            str_to_disambig("7").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(None, Some(0)),
+            str_to_disambig("8").unwrap()
+        );
+
+        assert_eq!(
+            DisambigPosition::new(Some(4), Some(0)),
+            str_to_disambig("e8").unwrap()
+        );
+        assert_eq!(
+            DisambigPosition::new(Some(6), Some(7)),
+            str_to_disambig("g1").unwrap()
+        );
+    }
+
+    #[test]
+    fn valid_disambig_to_str() {
+        assert_eq!(
+            "a".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(0), None))
+        );
+        assert_eq!(
+            "b".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(1), None))
+        );
+        assert_eq!(
+            "c".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(2), None))
+        );
+        assert_eq!(
+            "d".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(3), None))
+        );
+        assert_eq!(
+            "e".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(4), None))
+        );
+        assert_eq!(
+            "f".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(5), None))
+        );
+        assert_eq!(
+            "g".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(6), None))
+        );
+        assert_eq!(
+            "h".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(7), None))
+        );
+
+        assert_eq!(
+            "1".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(7)))
+        );
+        assert_eq!(
+            "2".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(6)))
+        );
+        assert_eq!(
+            "3".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(5)))
+        );
+        assert_eq!(
+            "4".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(4)))
+        );
+        assert_eq!(
+            "5".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(3)))
+        );
+        assert_eq!(
+            "6".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(2)))
+        );
+        assert_eq!(
+            "7".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(1)))
+        );
+        assert_eq!(
+            "8".to_string(),
+            disambig_to_str(&DisambigPosition::new(None, Some(0)))
+        );
+
+        assert_eq!(
+            "g8".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(6), Some(0)))
+        );
+        assert_eq!(
+            "d3".to_string(),
+            disambig_to_str(&DisambigPosition::new(Some(3), Some(5)))
+        );
     }
 
     #[test]

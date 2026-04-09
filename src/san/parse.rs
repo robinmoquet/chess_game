@@ -3,7 +3,7 @@ use regex::Regex;
 use crate::{
     errors::ActionError,
     types::{Action, ActionKind, Color, DisambigPosition, PieceKind, Position},
-    utils::{char_to_piece, str_to_pos},
+    utils::{char_to_piece, str_to_disambig, str_to_pos},
 };
 
 pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
@@ -74,6 +74,9 @@ pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
         if let Some(t) = caps.name("to") {
             action.to = str_to_pos(t.as_str()).unwrap();
         }
+        if let Some(d) = caps.name("disambig") {
+            action.from = Some(str_to_disambig(d.as_str()).unwrap());
+        }
     } else {
         if caps.name("p_cap").is_some() {
             action.kind = ActionKind::Capture
@@ -84,6 +87,9 @@ pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
         if let Some(pr) = caps.name("p_prom") {
             action.promotion =
                 Some(char_to_piece(pr.as_str().replace("=", "").chars().last().unwrap()).kind);
+        }
+        if let Some(d) = caps.name("p_from") {
+            action.from = Some(str_to_disambig(d.as_str()).unwrap());
         }
     }
 
@@ -200,8 +206,8 @@ mod tests {
         assert_eq!(
             Action::new(
                 str_to_pos("f3").unwrap(),
-                ActionKind::Capture,
-                PieceKind::Knight,
+                ActionKind::Move,
+                PieceKind::Queen,
                 None,
                 false,
                 true,
