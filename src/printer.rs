@@ -1,5 +1,6 @@
 use crate::{
-    types::{Color, GameState, Move, Piece, PieceKind, Square},
+    san,
+    types::{Color, GameState, Piece, PieceKind, Square},
     utils::{castling_to_str, pos_to_str},
 };
 
@@ -72,29 +73,19 @@ pub fn print_fen(game: &GameState) -> String {
 
 pub fn print_pgn_content(game: &GameState) -> String {
     let pgn_content_str: String = game
-        .moves_history
+        .history
         .iter()
         .enumerate()
-        .map(|(i, m)| {
+        .map(|(i, a)| {
             if i % 2 == 0 {
-                format!("{}. {} ", (i / 2) + 1, print_move(&m))
+                format!("{}. {} ", (i / 2) + 1, san::to_string(a))
             } else {
-                format!("{} ", print_move(&m))
+                format!("{} ", san::to_string(a))
             }
         })
         .collect::<Vec<String>>()
         .join("");
     format!("{}", pgn_content_str)
-}
-
-pub fn print_move(m: &Move) -> String {
-    let piece = m.piece;
-    if piece.kind == PieceKind::Pawn {
-        return pos_to_str(&m.to).to_string();
-    }
-    let piece_kind = print_piece_kind(&piece.kind);
-
-    format!("{}{}", piece_kind, pos_to_str(&m.to))
 }
 
 pub fn print_piece_kind(kind: &PieceKind) -> &'static str {

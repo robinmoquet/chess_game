@@ -1,5 +1,3 @@
-use std::default;
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Color {
     White,
@@ -83,20 +81,6 @@ impl Board {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Move {
-    pub piece: Piece,
-    pub from: Position,
-    pub to: Position,
-    // pub promotion: Option<PieceKind>,
-}
-
-impl Move {
-    pub fn new(piece: Piece, from: Position, to: Position) -> Self {
-        Move { piece, from, to }
-    }
-}
-
-#[derive(Debug, PartialEq)]
 pub enum GameStatus {
     InProgress,
     Check(Color),
@@ -127,7 +111,7 @@ impl Castling {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ActionKind {
     Surrend,
     Move,
@@ -137,7 +121,7 @@ pub enum ActionKind {
     Draw,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Action {
     pub kind: ActionKind,
     pub to: Position,
@@ -174,7 +158,7 @@ impl Action {
 pub struct GameState {
     pub board: Board,
     pub current_player: Color,
-    pub moves_history: Vec<Move>,
+    pub history: Vec<Action>,
     pub status: GameStatus,
     pub en_passant_target: Option<Position>,
     pub halfmove_clock: u8,
@@ -187,7 +171,7 @@ impl GameState {
         board: Board,
         current_player: Option<Color>,
         status: Option<GameStatus>,
-        moves_history: Option<Vec<Move>>,
+        history: Option<Vec<Action>>,
         en_passant_target: Option<Position>,
         halfmove_clock: Option<u8>,
         fullmove_number: Option<u16>,
@@ -195,7 +179,7 @@ impl GameState {
     ) -> Self {
         let current_player = current_player.unwrap_or_else(|| Color::White);
         let status = status.unwrap_or_else(|| GameStatus::InProgress);
-        let moves_history = moves_history.unwrap_or_else(|| Vec::new());
+        let history = history.unwrap_or_else(|| Vec::new());
         let halfmove_clock = halfmove_clock.unwrap_or_else(|| 0);
         let fullmove_number = fullmove_number.unwrap_or_else(|| 1);
         let castling_possibilities =
@@ -204,7 +188,7 @@ impl GameState {
         GameState {
             board,
             current_player,
-            moves_history,
+            history,
             status,
             en_passant_target,
             halfmove_clock,

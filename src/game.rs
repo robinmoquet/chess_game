@@ -6,8 +6,7 @@ use crate::{
     move_compute::{backward_one_square, forward_one_square, move_delta, move_possibilities},
     printer, san,
     types::{
-        Action, ActionKind, Board, Color, GameState, GameStatus, Move, Piece, PieceKind, Position,
-        Square,
+        Action, ActionKind, Board, Color, GameState, GameStatus, Piece, PieceKind, Position, Square,
     },
     utils::str_to_castling,
 };
@@ -81,7 +80,7 @@ pub fn ask_action() -> String {
         .unwrap()
 }
 
-pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, GameState) {
+pub fn do_action(action: String, mut game: GameState) -> (Result<(), ActionError>, GameState) {
     let action = san::parse(&action, Some(game.current_player));
     if let Err(e) = action {
         return (Err(e), game);
@@ -91,6 +90,7 @@ pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, G
         return (Ok(()), surrend(game));
     }
 
+    game.history.push(action.clone());
     do_move(&action, game)
 }
 
@@ -114,7 +114,6 @@ pub fn do_move(action: &Action, mut game: GameState) -> (Result<(), ActionError>
 
     game.board.squares[from.row as usize][from.col as usize] = Square::new(None);
     game.board.squares[to.row as usize][to.col as usize] = Square::new(Some(piece));
-    game.moves_history.push(Move::new(piece, from, to));
 
     // move is capture "en passant"
     if piece.kind == PieceKind::Pawn
@@ -211,7 +210,7 @@ pub fn clear() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Color, GameStatus, Move, Square, Squares};
+    use crate::types::{Color, GameStatus, Square, Squares};
 
     #[test]
     fn default_initialize() {
@@ -300,7 +299,7 @@ mod tests {
         ];
 
         assert_eq!(game.current_player, Color::White);
-        assert_eq!(game.moves_history, Vec::<Move>::new());
+        assert_eq!(game.history, Vec::<Action>::new());
         assert_eq!(game.status, GameStatus::InProgress);
         assert_eq!(game.board, Board::new(squares));
     }
