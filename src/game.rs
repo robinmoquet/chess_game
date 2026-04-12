@@ -11,10 +11,10 @@ use crate::{
     utils::str_to_castling,
 };
 
-pub fn initialize() -> GameState {
-    let fen = fen::parse(String::from(
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    ))
+pub fn initialize(init_fen: Option<String>) -> GameState {
+    let fen = fen::parse(
+        init_fen.unwrap_or("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()),
+    )
     .unwrap();
 
     let board = Board::new(fen.squares);
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn default_initialize() {
-        let game = initialize();
+        let game = initialize(None);
         let squares: Squares = [
             [
                 Square::new(Some(Piece::new(PieceKind::Rook, Color::Black))),

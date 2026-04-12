@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn white_pawn_default_moves() {
-        let mut game = initialize();
+        let mut game = initialize(None);
         let piece = Piece::new(PieceKind::Pawn, Color::White);
 
         // Test default move
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn black_pawn_default_moves() {
-        let mut game = initialize();
+        let mut game = initialize(None);
         let piece = Piece::new(PieceKind::Pawn, Color::Black);
 
         // Test default move
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn white_pawn_en_passant_move() {
-        let mut game = initialize();
+        let mut game = initialize(None);
         let piece = Piece::new(PieceKind::Pawn, Color::White);
 
         assert_eq!(
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn black_pawn_en_passant_move() {
-        let mut game = initialize();
+        let mut game = initialize(None);
         let piece = Piece::new(PieceKind::Pawn, Color::Black);
 
         assert_eq!(
