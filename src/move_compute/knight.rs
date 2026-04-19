@@ -78,7 +78,7 @@ mod tests {
     }
 
     #[test]
-    fn white_knight_all_moves() {
+    fn knight_all_moves() {
         let game = initialize(Some("7k/8/3n4/8/8/3N4/8/7K w - - 0 1".to_string()));
         let wpiece = Piece::new(PieceKind::Knight, Color::White);
         let bpiece = Piece::new(PieceKind::Knight, Color::Black);
@@ -112,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    fn white_knight_side_moves() {
+    fn knight_side_moves() {
         let game = initialize(Some("3k4/8/8/n6n/N6N/8/8/3K4 w - - 0 1".to_string()));
         let wpiece = Piece::new(PieceKind::Knight, Color::White);
         let bpiece = Piece::new(PieceKind::Knight, Color::Black);
