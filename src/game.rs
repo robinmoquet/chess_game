@@ -6,7 +6,8 @@ use crate::{
     move_compute::{backward_one_square, forward_one_square, move_delta, move_possibilities},
     printer, san,
     types::{
-        Action, ActionKind, Board, Color, GameState, GameStatus, Piece, PieceKind, Position, Square,
+        Action, ActionKind, Board, Color, DisambigPosition, GameState, GameStatus, Piece,
+        PieceKind, Position, Square,
     },
     utils::str_to_castling,
 };
@@ -90,8 +91,7 @@ pub fn do_action(action: String, mut game: GameState) -> (Result<(), ActionError
         return (Ok(()), surrend(game));
     }
 
-    game.history.push(action.clone());
-    do_move(&action, game)
+    do_move(action, game)
 }
 
 pub fn surrend(mut game: GameState) -> GameState {
@@ -103,7 +103,7 @@ pub fn confirm(prompt: &str) -> bool {
     Confirm::new().with_prompt(prompt).interact().unwrap()
 }
 
-pub fn do_move(action: &Action, mut game: GameState) -> (Result<(), ActionError>, GameState) {
+pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionError>, GameState) {
     let piece = Piece::new(action.piece_kind, game.current_player);
     let to = action.to;
     let from = get_current_pos(&game, &action);
@@ -112,17 +112,17 @@ pub fn do_move(action: &Action, mut game: GameState) -> (Result<(), ActionError>
     }
     let from = from.unwrap();
 
+    if action.kind != ActionKind::Capture && is_capture(&game, &to, &piece) {
+        action.kind = ActionKind::Capture;
+        if piece.kind == PieceKind::Pawn {
+            action.from = Some(DisambigPosition::new(Some(from.col), None));
+        }
+    }
+
     game.board.squares[from.row as usize][from.col as usize] = Square::new(None);
     game.board.squares[to.row as usize][to.col as usize] = Square::new(Some(piece));
 
-    // move is capture "en passant"
-    if piece.kind == PieceKind::Pawn
-        && game.en_passant_target != None
-        && to == game.en_passant_target.unwrap()
-    {
-        let pawn = backward_one_square(&to, &piece.color);
-        game.board.squares[pawn.row as usize][pawn.col as usize] = Square::new(None);
-    }
+    manage_special_moves(&piece, &mut game, &action, &from);
 
     if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 && from.col == to.col {
         game.en_passant_target = Some(forward_one_square(&from, &piece.color));
@@ -130,10 +130,7 @@ pub fn do_move(action: &Action, mut game: GameState) -> (Result<(), ActionError>
         game.en_passant_target = None;
     }
 
-    // println!("{:?}", pos_to_str(&from));
-    // println!("{:?}", piece);
-    // println!("{:?}", pos_to_str(&to));
-
+    game.history.push(action);
     (Ok(()), game)
 }
 
@@ -169,7 +166,7 @@ pub fn get_current_pos(game: &GameState, action: &Action) -> Result<Position, Ac
     }
 
     if res.len() == 0 {
-        return Err(ActionError::new("No initial position find"));
+        return Err(ActionError::new("No initial position find, res == 0"));
     }
 
     // if single possibility return it, else we must find the good one
@@ -177,6 +174,9 @@ pub fn get_current_pos(game: &GameState, action: &Action) -> Result<Position, Ac
         return Ok(res[0]);
     }
 
+    if action.from.is_none() {
+        return Err(ActionError::new("No disambig position"));
+    }
     let from = action.from.unwrap();
     let res = res.iter().find(|p| {
         if from.col.is_some() && from.row.is_some() {
@@ -193,7 +193,48 @@ pub fn get_current_pos(game: &GameState, action: &Action) -> Result<Position, Ac
     }
 
     println!("{:?}", res);
-    return Err(ActionError::new("No initial position find"));
+    return Err(ActionError::new("No initial position find, res > 1"));
+}
+
+pub fn manage_special_moves(piece: &Piece, game: &mut GameState, action: &Action, from: &Position) {
+    let to = action.to;
+
+    if is_en_passant_capture(game, &to, piece) {
+        let pawn = backward_one_square(&to, &piece.color);
+        game.board.squares[pawn.row as usize][pawn.col as usize] = Square::new(None);
+    }
+
+    if piece.kind == PieceKind::King && piece.color == Color::White && to.col == 6 {
+        game.board.squares[7][7] = Square::new(None);
+        game.board.squares[7][5] = Square::new(Some(Piece::new(PieceKind::Rook, Color::White)));
+    }
+    if piece.kind == PieceKind::King && piece.color == Color::Black && to.col == 6 {
+        game.board.squares[0][7] = Square::new(None);
+        game.board.squares[0][5] = Square::new(Some(Piece::new(PieceKind::Rook, Color::Black)));
+    }
+    if piece.kind == PieceKind::King && piece.color == Color::White && to.col == 2 {
+        game.board.squares[7][0] = Square::new(None);
+        game.board.squares[7][3] = Square::new(Some(Piece::new(PieceKind::Rook, Color::White)));
+    }
+    if piece.kind == PieceKind::King && piece.color == Color::Black && to.col == 2 {
+        game.board.squares[0][0] = Square::new(None);
+        game.board.squares[0][3] = Square::new(Some(Piece::new(PieceKind::Rook, Color::Black)));
+    }
+}
+
+pub fn is_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {
+    if is_en_passant_capture(game, to, piece) {
+        return true;
+    }
+    game.board.squares[to.row as usize][to.col as usize]
+        .piece
+        .is_some()
+}
+
+pub fn is_en_passant_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {
+    piece.kind == PieceKind::Pawn
+        && game.en_passant_target != None
+        && *to == game.en_passant_target.unwrap()
 }
 
 pub fn clear() {
