@@ -1,6 +1,7 @@
 use dialoguer::{Confirm, Input};
 
 use crate::{
+    check::is_check,
     errors::ActionError,
     fen,
     move_compute::{backward_one_square, forward_one_square, move_delta, move_possibilities},
@@ -9,7 +10,7 @@ use crate::{
         Action, ActionKind, Board, Color, DisambigPosition, GameState, GameStatus, Piece,
         PieceKind, Position, Square,
     },
-    utils::str_to_castling,
+    utils::{is_empty_square, str_to_castling},
 };
 
 pub fn initialize(init_fen: Option<String>) -> GameState {
@@ -50,11 +51,6 @@ pub fn play(mut game: GameState) {
             }
         }
 
-        game.current_player = if game.current_player == Color::White {
-            Color::Black
-        } else {
-            Color::White
-        };
         if let GameStatus::Checkmate(_) = game.status {
             // end();
             break;
@@ -81,7 +77,7 @@ pub fn ask_action() -> String {
         .unwrap()
 }
 
-pub fn do_action(action: String, mut game: GameState) -> (Result<(), ActionError>, GameState) {
+pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, GameState) {
     let action = san::parse(&action, Some(game.current_player));
     if let Err(e) = action {
         return (Err(e), game);
@@ -121,8 +117,7 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
 
     game.board.squares[from.row as usize][from.col as usize] = Square::new(None);
     game.board.squares[to.row as usize][to.col as usize] = Square::new(Some(piece));
-
-    manage_special_moves(&piece, &mut game, &action, &from);
+    manage_special_moves(&piece, &mut game, &action);
 
     if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 && from.col == to.col {
         game.en_passant_target = Some(forward_one_square(&from, &piece.color));
@@ -130,7 +125,13 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
         game.en_passant_target = None;
     }
 
+    action.check = is_check(&game, &game.current_player);
     game.history.push(action);
+    game.current_player = if game.current_player == Color::White {
+        Color::Black
+    } else {
+        Color::White
+    };
     (Ok(()), game)
 }
 
@@ -196,7 +197,7 @@ pub fn get_current_pos(game: &GameState, action: &Action) -> Result<Position, Ac
     return Err(ActionError::new("No initial position find, res > 1"));
 }
 
-pub fn manage_special_moves(piece: &Piece, game: &mut GameState, action: &Action, from: &Position) {
+pub fn manage_special_moves(piece: &Piece, game: &mut GameState, action: &Action) {
     let to = action.to;
 
     if is_en_passant_capture(game, &to, piece) {
@@ -226,9 +227,7 @@ pub fn is_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {
     if is_en_passant_capture(game, to, piece) {
         return true;
     }
-    game.board.squares[to.row as usize][to.col as usize]
-        .piece
-        .is_some()
+    !is_empty_square(&game.board.squares, to)
 }
 
 pub fn is_en_passant_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {

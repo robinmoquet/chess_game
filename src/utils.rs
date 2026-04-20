@@ -128,6 +128,22 @@ pub fn is_empty_square(squares: &Squares, pos: &Position) -> bool {
     squares[pos.row as usize][pos.col as usize].piece.is_none()
 }
 
+pub fn find_piece(piece: &Piece, squares: &Squares) -> Option<Position> {
+    for (r, row) in squares.iter().enumerate() {
+        for (c, square) in row.iter().enumerate() {
+            if square.piece == Some(*piece) {
+                return Some(Position::new(c as u8, r as u8));
+            }
+        }
+    }
+
+    None
+}
+
+pub fn is_in_board(col: i8, row: i8) -> bool {
+    0 <= col && col < 8 && 0 <= row && row < 8
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

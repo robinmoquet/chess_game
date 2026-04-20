@@ -1,4 +1,7 @@
-use crate::types::{GameState, Piece, Position};
+use crate::{
+    types::{GameState, Piece, Position},
+    utils::is_in_board,
+};
 
 pub fn knight_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) -> Vec<Position> {
     let mut res = Vec::new();
@@ -16,10 +19,8 @@ pub fn knight_move_possibilities(game: &GameState, piece: &Piece, pos: &Position
     for (col, row) in possibilities {
         let (col, row) = (pos.col as i8 + col, pos.row as i8 + row);
 
-        let is_in_board = 0 <= col && col < 8 && 0 <= row && row < 8;
-
         // check if possiblities is in board and if square is empty or use by other color
-        if is_in_board
+        if is_in_board(col, row)
             && (game.board.squares[row as usize][col as usize]
                 .piece
                 .is_none()

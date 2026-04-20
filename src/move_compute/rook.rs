@@ -1,4 +1,7 @@
-use crate::types::{GameState, Piece, Position};
+use crate::{
+    types::{GameState, Piece, Position},
+    utils::is_in_board,
+};
 
 pub fn rook_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) -> Vec<Position> {
     let mut res: Vec<Position> = Vec::new();
@@ -11,8 +14,7 @@ pub fn rook_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) 
             col = col + dcol;
             row = row + drow;
 
-            let is_in_board = 0 <= col && col < 8 && 0 <= row && row < 8;
-            if !is_in_board {
+            if !is_in_board(col, row) {
                 break;
             }
 
