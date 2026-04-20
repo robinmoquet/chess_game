@@ -1,13 +1,17 @@
 mod bishop;
+mod king;
 mod knight;
 mod pawn;
+mod queen;
 mod rook;
 mod utils;
 
 use crate::{
     move_compute::bishop::bishop_move_possibilities,
+    move_compute::king::king_move_possibilities,
     move_compute::knight::knight_move_possibilities,
     move_compute::pawn::pawn_move_possibilities,
+    move_compute::queen::queen_move_possibilities,
     move_compute::rook::rook_move_possibilities,
     types::{GameState, Piece, PieceKind, Position},
 };
@@ -20,8 +24,7 @@ pub fn move_possibilities(game: &GameState, piece: &Piece, pos: &Position) -> Ve
         PieceKind::Rook => rook_move_possibilities(game, piece, pos),
         PieceKind::Knight => knight_move_possibilities(game, piece, pos),
         PieceKind::Bishop => bishop_move_possibilities(game, piece, pos),
-        // PieceKind::King => king_move_possibilities(game, piece, pos),
-        // PieceKind::Queen => queen_move_possibilities(game, piece, pos),
-        _ => todo!(),
+        PieceKind::King => king_move_possibilities(game, piece, pos),
+        PieceKind::Queen => queen_move_possibilities(game, piece, pos),
     }
 }
