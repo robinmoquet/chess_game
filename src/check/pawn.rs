@@ -23,7 +23,6 @@ pub fn is_check_pawn(king_pos: &Position, color: &Color, squares: &Squares) -> b
         }
 
         let piece = piece.unwrap();
-
         if piece.kind == PieceKind::Pawn && piece.color != *color {
             return true;
         }
