@@ -1,5 +1,8 @@
 use crate::{
-    move_compute::utils::{forward_left_one_square, forward_one_square, forward_right_one_square},
+    move_compute::utils::{
+        filter_moves_in_check, forward_left_one_square, forward_one_square,
+        forward_right_one_square,
+    },
     types::{Color, GameState, Piece, Position},
     utils::is_empty_square,
 };
@@ -41,7 +44,8 @@ pub fn pawn_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) 
 
     if (!is_col_a && color == Color::White) || (!is_col_h && color == Color::Black) {
         let left_side_square = forward_left_one_square(pos, &color);
-        if !is_empty_square(&squares, &left_side_square)
+        let piece = squares[left_side_square.row as usize][left_side_square.col as usize].piece;
+        if (piece.is_some() && piece.unwrap().color != color)
             || game.en_passant_target == Some(left_side_square)
         {
             res.push(left_side_square);
@@ -50,14 +54,15 @@ pub fn pawn_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) 
 
     if (!is_col_h && color == Color::White) || (!is_col_a && color == Color::Black) {
         let right_side_square = forward_right_one_square(pos, &color);
-        if !is_empty_square(&squares, &right_side_square)
+        let piece = squares[right_side_square.row as usize][right_side_square.col as usize].piece;
+        if (piece.is_some() && piece.unwrap().color != color)
             || game.en_passant_target == Some(right_side_square)
         {
             res.push(right_side_square);
         }
     }
 
-    res
+    filter_moves_in_check(game, piece, pos, res)
 }
 
 #[cfg(test)]
@@ -301,6 +306,54 @@ mod tests {
         assert_eq!(
             vec![str_to_pos("d3").unwrap(), str_to_pos("c3").unwrap()],
             pawn_move_possibilities(&game, &piece, &str_to_pos("d4").unwrap())
+        );
+    }
+
+    #[test]
+    fn black_pawn_prevent_illegal_moves() {
+        let game = initialize(Some(
+            "8/3k1p1R/2p1p3/3p4/Q3P1B1/8/8/3R3K b - - 0 1".to_string(),
+        ));
+        let piece = Piece::new(PieceKind::Pawn, Color::Black);
+
+        assert_eq!(
+            Vec::<Position>::new(),
+            pawn_move_possibilities(&game, &piece, &str_to_pos("c6").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            pawn_move_possibilities(&game, &piece, &str_to_pos("e6").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            pawn_move_possibilities(&game, &piece, &str_to_pos("f7").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("d4").unwrap()],
+            pawn_move_possibilities(&game, &piece, &str_to_pos("d5").unwrap())
+        );
+    }
+
+    #[test]
+    fn white_pawn_prevent_illegal_moves() {
+        let game = initialize(Some("3q4/8/b7/4b3/1pPPPP2/r1PK4/8/8 w - - 0 1".to_string()));
+        let piece = Piece::new(PieceKind::Pawn, Color::White);
+
+        assert_eq!(
+            Vec::<Position>::new(),
+            pawn_move_possibilities(&game, &piece, &str_to_pos("c3").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            pawn_move_possibilities(&game, &piece, &str_to_pos("c4").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("d5").unwrap()],
+            pawn_move_possibilities(&game, &piece, &str_to_pos("d4").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("f5").unwrap(), str_to_pos("e5").unwrap()],
+            pawn_move_possibilities(&game, &piece, &str_to_pos("f4").unwrap())
         );
     }
 }

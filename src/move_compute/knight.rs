@@ -1,4 +1,5 @@
 use crate::{
+    move_compute::utils::filter_moves_in_check,
     types::{GameState, Piece, Position},
     utils::is_in_board,
 };
@@ -34,7 +35,7 @@ pub fn knight_move_possibilities(game: &GameState, piece: &Piece, pos: &Position
         }
     }
 
-    res
+    filter_moves_in_check(game, piece, pos, res)
 }
 
 #[cfg(test)]
@@ -252,6 +253,42 @@ mod tests {
         assert_eq!(
             vec![str_to_pos("f6").unwrap(),],
             knight_move_possibilities(&game, &bpiece, &str_to_pos("h7").unwrap())
+        );
+    }
+
+    #[test]
+    fn white_knight_prevent_illegal_moves() {
+        let game = initialize(Some("8/3k4/8/b5q1/8/2N1N3/3K1N1r/8 w - - 1 1".to_string()));
+        let wpiece = Piece::new(PieceKind::Knight, Color::White);
+        assert_eq!(
+            Vec::<Position>::new(),
+            knight_move_possibilities(&game, &wpiece, &str_to_pos("c3").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            knight_move_possibilities(&game, &wpiece, &str_to_pos("e3").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            knight_move_possibilities(&game, &wpiece, &str_to_pos("f2").unwrap())
+        );
+    }
+
+    #[test]
+    fn black_knight_prevent_illegal_moves() {
+        let game = initialize(Some("8/Qn1k4/8/3n1n2/6B1/3R4/3K4/8 w - - 1 1".to_string()));
+        let bpiece = Piece::new(PieceKind::Knight, Color::Black);
+        assert_eq!(
+            Vec::<Position>::new(),
+            knight_move_possibilities(&game, &bpiece, &str_to_pos("b7").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            knight_move_possibilities(&game, &bpiece, &str_to_pos("d5").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            knight_move_possibilities(&game, &bpiece, &str_to_pos("f5").unwrap())
         );
     }
 }

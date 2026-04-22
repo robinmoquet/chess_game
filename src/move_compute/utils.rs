@@ -1,4 +1,8 @@
-use crate::types::{Color, Position};
+use crate::{
+    check::is_check,
+    game::update_squares,
+    types::{Color, GameState, Piece, Position},
+};
 
 pub fn forward_one_square(pos: &Position, color: &Color) -> Position {
     if *color == Color::White {
@@ -48,6 +52,24 @@ pub fn move_delta(a: &Position, b: &Position) -> u8 {
     }
 
     res
+}
+
+pub fn filter_moves_in_check(
+    game: &GameState,
+    piece: &Piece,
+    from: &Position,
+    moves: Vec<Position>,
+) -> Vec<Position> {
+    moves
+        .into_iter()
+        .filter(|pos| {
+            // Simulate the move and check if the king is in check
+            let mut squares = game.board.squares.clone();
+            update_squares(&mut squares, from, pos, piece, &None);
+
+            !is_check(&squares, &piece.color)
+        })
+        .collect()
 }
 
 #[cfg(test)]

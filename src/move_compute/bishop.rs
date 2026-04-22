@@ -1,4 +1,5 @@
 use crate::{
+    move_compute::utils::filter_moves_in_check,
     types::{GameState, Piece, Position},
     utils::is_in_board,
 };
@@ -39,7 +40,7 @@ pub fn bishop_move_possibilities(game: &GameState, piece: &Piece, pos: &Position
         }
     }
 
-    res
+    filter_moves_in_check(game, piece, pos, res)
 }
 
 #[cfg(test)]
@@ -311,6 +312,38 @@ mod tests {
                 str_to_pos("e3").unwrap(),
             ],
             bishop_move_possibilities(&game, &piece, &str_to_pos("f4").unwrap())
+        );
+    }
+
+    #[test]
+    fn white_bishop_prevent_illegal_moves() {
+        let game = initialize(Some("8/3k4/3r4/1n4q1/8/3BB3/3K4/8 w - - 1 1".to_string()));
+        let wpiece = Piece::new(PieceKind::Bishop, Color::White);
+        assert_eq!(
+            Vec::<Position>::new(),
+            bishop_move_possibilities(&game, &wpiece, &str_to_pos("d3").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("f4").unwrap(), str_to_pos("g5").unwrap(),],
+            bishop_move_possibilities(&game, &wpiece, &str_to_pos("e3").unwrap())
+        );
+    }
+
+    #[test]
+    fn black_bishop_prevent_illegal_moves() {
+        let game = initialize(Some("8/R1bk4/4b3/3b1B2/8/3Q4/3K4/8 b - - 1 1".to_string()));
+        let bpiece = Piece::new(PieceKind::Bishop, Color::Black);
+        assert_eq!(
+            Vec::<Position>::new(),
+            bishop_move_possibilities(&game, &bpiece, &str_to_pos("d5").unwrap())
+        );
+        assert_eq!(
+            Vec::<Position>::new(),
+            bishop_move_possibilities(&game, &bpiece, &str_to_pos("c7").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("f5").unwrap(),],
+            bishop_move_possibilities(&game, &bpiece, &str_to_pos("e6").unwrap())
         );
     }
 }

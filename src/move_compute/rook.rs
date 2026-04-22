@@ -1,4 +1,5 @@
 use crate::{
+    move_compute::utils::filter_moves_in_check,
     types::{GameState, Piece, Position},
     utils::is_in_board,
 };
@@ -39,7 +40,7 @@ pub fn rook_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) 
         }
     }
 
-    res
+    filter_moves_in_check(game, piece, pos, res)
 }
 
 #[cfg(test)]
@@ -346,6 +347,50 @@ mod tests {
                 str_to_pos("a8").unwrap(),
             ],
             rook_move_possibilities(&game, &bpiece, &str_to_pos("d8").unwrap())
+        );
+    }
+
+    #[test]
+    fn white_rook_prevent_illegal_moves() {
+        let game = initialize(Some("8/3k4/3r4/b2R4/8/2R5/3K1R1q/8 w - - 1 1".to_string()));
+        let wpiece = Piece::new(PieceKind::Rook, Color::White);
+        assert_eq!(
+            Vec::<Position>::new(),
+            rook_move_possibilities(&game, &wpiece, &str_to_pos("c3").unwrap())
+        );
+        assert_eq!(
+            vec![
+                str_to_pos("d6").unwrap(),
+                str_to_pos("d4").unwrap(),
+                str_to_pos("d3").unwrap()
+            ],
+            rook_move_possibilities(&game, &wpiece, &str_to_pos("d5").unwrap())
+        );
+        assert_eq!(
+            vec![
+                str_to_pos("g2").unwrap(),
+                str_to_pos("h2").unwrap(),
+                str_to_pos("e2").unwrap(),
+            ],
+            rook_move_possibilities(&game, &wpiece, &str_to_pos("f2").unwrap())
+        );
+    }
+
+    #[test]
+    fn black_rook_prevent_illegal_moves() {
+        let game = initialize(Some("8/3krQ2/2r5/3r4/B2R4/8/3K4/8 b - - 1 1".to_string()));
+        let bpiece = Piece::new(PieceKind::Rook, Color::Black);
+        assert_eq!(
+            Vec::<Position>::new(),
+            rook_move_possibilities(&game, &bpiece, &str_to_pos("c6").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("f7").unwrap(),],
+            rook_move_possibilities(&game, &bpiece, &str_to_pos("e7").unwrap())
+        );
+        assert_eq!(
+            vec![str_to_pos("d6").unwrap(), str_to_pos("d4").unwrap(),],
+            rook_move_possibilities(&game, &bpiece, &str_to_pos("d5").unwrap())
         );
     }
 }

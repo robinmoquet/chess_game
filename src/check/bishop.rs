@@ -23,7 +23,9 @@ pub fn is_check_bishop(king_pos: &Position, color: &Color, squares: &Squares) ->
             }
 
             let piece = piece.unwrap();
-            if piece.kind == PieceKind::Bishop && piece.color != *color {
+            if (piece.kind == PieceKind::Bishop || piece.kind == PieceKind::Queen)
+                && piece.color != *color
+            {
                 return true;
             } else {
                 break;

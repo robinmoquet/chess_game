@@ -24,7 +24,9 @@ pub fn is_check_rook(king_pos: &Position, color: &Color, squares: &Squares) -> b
             }
 
             let piece = piece.unwrap();
-            if piece.kind == PieceKind::Rook && piece.color != *color {
+            if (piece.kind == PieceKind::Rook || piece.kind == PieceKind::Queen)
+                && piece.color != *color
+            {
                 return true;
             } else {
                 break;

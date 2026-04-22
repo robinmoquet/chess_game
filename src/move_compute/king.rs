@@ -1,4 +1,5 @@
 use crate::{
+    move_compute::utils::filter_moves_in_check,
     types::{Color, GameState, Piece, Position},
     utils::is_in_board,
 };
@@ -46,7 +47,7 @@ pub fn king_move_possibilities(game: &GameState, piece: &Piece, pos: &Position) 
         res.push(Position::new(2, 0));
     }
 
-    res
+    filter_moves_in_check(game, piece, pos, res)
 }
 
 fn black_kingside_castling(game: &GameState) -> bool {
@@ -181,26 +182,16 @@ mod tests {
         assert_eq!(
             vec![
                 str_to_pos("e4").unwrap(),
-                str_to_pos("f4").unwrap(),
                 str_to_pos("g4").unwrap(),
                 str_to_pos("g2").unwrap(),
                 str_to_pos("f2").unwrap(),
                 str_to_pos("e2").unwrap(),
-                str_to_pos("e3").unwrap(),
             ],
             king_move_possibilities(&game, &wpiece, &str_to_pos("f3").unwrap())
         );
 
         assert_eq!(
-            vec![
-                str_to_pos("b7").unwrap(),
-                str_to_pos("c7").unwrap(),
-                str_to_pos("d7").unwrap(),
-                str_to_pos("d6").unwrap(),
-                str_to_pos("c5").unwrap(),
-                str_to_pos("b5").unwrap(),
-                str_to_pos("b6").unwrap(),
-            ],
+            vec![str_to_pos("b7").unwrap(), str_to_pos("c5").unwrap(),],
             king_move_possibilities(&game, &bpiece, &str_to_pos("c6").unwrap())
         );
     }
@@ -327,6 +318,27 @@ mod tests {
                 str_to_pos("g8").unwrap(),
             ],
             king_move_possibilities(&game, &bpiece, &str_to_pos("e8").unwrap())
+        );
+    }
+
+    #[test]
+    fn king_prevent_illegal_moves() {
+        let game = initialize(Some("5B2/8/3ppp2/6k1/4K3/4PP2/8/8 b - - 0 1".to_string()));
+        let wpiece = Piece::new(PieceKind::King, Color::White);
+        let bpiece = Piece::new(PieceKind::King, Color::Black);
+
+        assert_eq!(
+            vec![str_to_pos("d3").unwrap(), str_to_pos("d4").unwrap(),],
+            king_move_possibilities(&game, &wpiece, &str_to_pos("e4").unwrap())
+        );
+
+        assert_eq!(
+            vec![
+                str_to_pos("g6").unwrap(),
+                str_to_pos("h5").unwrap(),
+                str_to_pos("h4").unwrap(),
+            ],
+            king_move_possibilities(&game, &bpiece, &str_to_pos("g5").unwrap())
         );
     }
 }
