@@ -125,13 +125,14 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
         game.en_passant_target = None;
     }
 
-    action.check = is_check(&game, &game.current_player);
-    game.history.push(action);
     game.current_player = if game.current_player == Color::White {
         Color::Black
     } else {
         Color::White
     };
+
+    action.check = is_check(&game, &game.current_player);
+    game.history.push(action);
     (Ok(()), game)
 }
 
