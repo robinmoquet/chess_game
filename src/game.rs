@@ -108,10 +108,33 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
     }
     let from = from.unwrap();
 
+    // Allow the user to provide a move action to capture a piece
+    // ex: 1. e4 d5 2. d5 -> 1. e4 d5 2. exd5
     if action.kind != ActionKind::Capture && is_capture(&game, &to, &piece) {
         action.kind = ActionKind::Capture;
         if piece.kind == PieceKind::Pawn {
             action.from = Some(DisambigPosition::new(Some(from.col), None));
+        }
+    }
+
+    // Allow the user to provide a king move action to castling
+    // ex: e4 e5 2. Nf3 Nf6 3. Bc4 Bc5 4. Kg1 Kg8 -> e4 e5 2. Nf3 Nf6 3. Bc4 Bc5 4. O-O O-O
+    if piece.kind == PieceKind::King
+        && (action.kind != ActionKind::Kingcastling && action.kind != ActionKind::Queencastling)
+        && is_castling(&from, &to, &piece)
+    {
+        if game.current_player == Color::White {
+            if to == Position::new(6, 7) {
+                action.kind = ActionKind::Kingcastling;
+            } else {
+                action.kind = ActionKind::Queencastling;
+            }
+        } else {
+            if to == Position::new(6, 0) {
+                action.kind = ActionKind::Kingcastling;
+            } else {
+                action.kind = ActionKind::Queencastling;
+            }
         }
     }
 
@@ -128,6 +151,8 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
     } else {
         game.en_passant_target = None;
     }
+
+    manage_side_effect(&mut game, &action, &piece, &from);
 
     game.current_player = if game.current_player == Color::White {
         Color::Black
@@ -241,6 +266,53 @@ pub fn manage_special_moves(
         squares[0][0] = Square::new(None);
         squares[0][3] = Square::new(Some(Piece::new(PieceKind::Rook, Color::Black)));
     }
+}
+
+pub fn manage_side_effect(game: &mut GameState, action: &Action, piece: &Piece, from: &Position) {
+    game.halfmove_clock += 1;
+
+    if game.current_player == Color::Black {
+        game.fullmove_number += 1;
+    }
+
+    if action.kind == ActionKind::Capture || piece.kind == PieceKind::Pawn {
+        game.halfmove_clock = 0;
+    }
+
+    if game.current_player == Color::White
+        && (game.castling_possibilities.kingside.0 || game.castling_possibilities.queenside.0)
+    {
+        if piece.kind == PieceKind::King {
+            game.castling_possibilities.kingside.0 = false;
+            game.castling_possibilities.queenside.0 = false;
+        }
+
+        if piece.kind == PieceKind::Rook && *from == Position::new(0, 7) {
+            game.castling_possibilities.queenside.0 = false;
+        }
+        if piece.kind == PieceKind::Rook && *from == Position::new(7, 7) {
+            game.castling_possibilities.kingside.0 = false;
+        }
+    }
+    if game.current_player == Color::Black
+        && (game.castling_possibilities.kingside.1 || game.castling_possibilities.queenside.1)
+    {
+        if piece.kind == PieceKind::King {
+            game.castling_possibilities.kingside.1 = false;
+            game.castling_possibilities.queenside.1 = false;
+        }
+
+        if piece.kind == PieceKind::Rook && *from == Position::new(0, 0) {
+            game.castling_possibilities.queenside.1 = false;
+        }
+        if piece.kind == PieceKind::Rook && *from == Position::new(7, 0) {
+            game.castling_possibilities.kingside.1 = false;
+        }
+    }
+}
+
+pub fn is_castling(from: &Position, to: &Position, piece: &Piece) -> bool {
+    piece.kind == PieceKind::King && move_delta(from, to) > 1
 }
 
 pub fn is_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {
