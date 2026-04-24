@@ -36,24 +36,6 @@ pub fn forward_right_one_square(pos: &Position, color: &Color) -> Position {
     }
 }
 
-pub fn move_delta(a: &Position, b: &Position) -> u8 {
-    let mut res: u8 = 0;
-
-    if a.col < b.col {
-        res += b.col - a.col
-    } else {
-        res += a.col - b.col
-    }
-
-    if a.row < b.row {
-        res += b.row - a.row
-    } else {
-        res += a.row - b.row
-    }
-
-    res
-}
-
 pub fn filter_moves_in_check(
     game: &GameState,
     piece: &Piece,
@@ -155,26 +137,6 @@ mod tests {
         assert_eq!(
             str_to_pos("a5").unwrap(),
             forward_right_one_square(&str_to_pos("b6").unwrap(), &Color::Black)
-        );
-    }
-
-    #[test]
-    fn valid_move_delta() {
-        assert_eq!(
-            2,
-            move_delta(&str_to_pos("e2").unwrap(), &str_to_pos("e4").unwrap())
-        );
-        assert_eq!(
-            1,
-            move_delta(&str_to_pos("e3").unwrap(), &str_to_pos("e4").unwrap())
-        );
-        assert_eq!(
-            4,
-            move_delta(&str_to_pos("a3").unwrap(), &str_to_pos("c5").unwrap())
-        );
-        assert_eq!(
-            12,
-            move_delta(&str_to_pos("a2").unwrap(), &str_to_pos("h7").unwrap())
         );
     }
 }

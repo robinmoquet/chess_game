@@ -134,8 +134,8 @@ pub struct Action {
 
 impl Action {
     pub fn new(
-        to: Position,
         kind: ActionKind,
+        to: Position,
         piece_kind: PieceKind,
         from: Option<DisambigPosition>,
         check: bool,

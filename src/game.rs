@@ -1,11 +1,12 @@
 use dialoguer::{Confirm, Input};
 
 use crate::{
-    check::is_check,
+    check::{is_check, is_checkmate},
     errors::ActionError,
     fen,
-    move_compute::{backward_one_square, forward_one_square, move_delta, move_possibilities},
-    printer, san,
+    move_compute::{backward_one_square, forward_one_square, move_possibilities},
+    printer::{self, print_game_result},
+    san,
     types::{
         Action, ActionKind, Board, Color, DisambigPosition, GameState, GameStatus, Piece,
         PieceKind, Position, Square, Squares,
@@ -51,11 +52,21 @@ pub fn play(mut game: GameState) {
             }
         }
 
+        if GameStatus::Draw == game.status {
+            end(&game);
+            break;
+        }
         if let GameStatus::Checkmate(_) = game.status {
-            // end();
+            end(&game);
             break;
         }
     }
+}
+
+pub fn end(game: &GameState) {
+    clear();
+    print(game);
+    println!("Game end : {}", print_game_result(game));
 }
 
 pub fn print(game: &GameState) {
@@ -83,8 +94,11 @@ pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, G
         return (Err(e), game);
     }
     let action = action.unwrap();
-    if action.kind == ActionKind::Surrend && confirm("Do you really want to give up ?") {
+    if action.kind == ActionKind::Surrend && confirm("Confirm surrend ?") {
         return (Ok(()), surrend(game));
+    }
+    if action.kind == ActionKind::Draw && confirm("Confirm draw ?") {
+        return (Ok(()), draw(game));
     }
 
     do_move(action, game)
@@ -92,6 +106,11 @@ pub fn do_action(action: String, game: GameState) -> (Result<(), ActionError>, G
 
 pub fn surrend(mut game: GameState) -> GameState {
     game.status = GameStatus::Checkmate(game.current_player);
+    game
+}
+
+pub fn draw(mut game: GameState) -> GameState {
+    game.status = GameStatus::Draw;
     game
 }
 
@@ -120,22 +139,16 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
     // Allow the user to provide a king move action to castling
     // ex: e4 e5 2. Nf3 Nf6 3. Bc4 Bc5 4. Kg1 Kg8 -> e4 e5 2. Nf3 Nf6 3. Bc4 Bc5 4. O-O O-O
     if piece.kind == PieceKind::King
-        && (action.kind != ActionKind::Kingcastling && action.kind != ActionKind::Queencastling)
-        && is_castling(&from, &to, &piece)
+        && action.kind != ActionKind::Kingcastling
+        && is_kingcastling(&from, &to, &piece)
     {
-        if game.current_player == Color::White {
-            if to == Position::new(6, 7) {
-                action.kind = ActionKind::Kingcastling;
-            } else {
-                action.kind = ActionKind::Queencastling;
-            }
-        } else {
-            if to == Position::new(6, 0) {
-                action.kind = ActionKind::Kingcastling;
-            } else {
-                action.kind = ActionKind::Queencastling;
-            }
-        }
+        action.kind = ActionKind::Kingcastling;
+    }
+    if piece.kind == PieceKind::King
+        && action.kind != ActionKind::Queencastling
+        && is_queencastling(&from, &to, &piece)
+    {
+        action.kind = ActionKind::Queencastling;
     }
 
     update_squares(
@@ -146,7 +159,7 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
         &game.en_passant_target,
     );
 
-    if piece.kind == PieceKind::Pawn && move_delta(&from, &to) == 2 && from.col == to.col {
+    if is_pawn_advances_two_squares(&from, &to, &piece) {
         game.en_passant_target = Some(forward_one_square(&from, &piece.color));
     } else {
         game.en_passant_target = None;
@@ -160,7 +173,13 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
         Color::White
     };
 
-    action.check = is_check(&game.board.squares, &game.current_player);
+    if is_check(&game.board.squares, &game.current_player) {
+        action.check = true;
+        if is_checkmate(&game, &game.current_player) {
+            action.checkmate = true;
+            game.status = GameStatus::Checkmate(game.current_player);
+        }
+    }
     game.history.push(action);
     (Ok(()), game)
 }
@@ -311,8 +330,28 @@ pub fn manage_side_effect(game: &mut GameState, action: &Action, piece: &Piece, 
     }
 }
 
-pub fn is_castling(from: &Position, to: &Position, piece: &Piece) -> bool {
-    piece.kind == PieceKind::King && move_delta(from, to) > 1
+pub fn is_kingcastling(from: &Position, to: &Position, piece: &Piece) -> bool {
+    if piece.kind != PieceKind::King {
+        return false;
+    }
+
+    if piece.color == Color::White {
+        return *from == Position::new(4, 7) && *to == Position::new(6, 7);
+    } else {
+        return *from == Position::new(4, 0) && *to == Position::new(6, 0);
+    }
+}
+
+pub fn is_queencastling(from: &Position, to: &Position, piece: &Piece) -> bool {
+    if piece.kind != PieceKind::King {
+        return false;
+    }
+
+    if piece.color == Color::White {
+        return *from == Position::new(4, 7) && *to == Position::new(2, 7);
+    } else {
+        return *from == Position::new(4, 0) && *to == Position::new(2, 0);
+    }
 }
 
 pub fn is_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {
@@ -324,6 +363,21 @@ pub fn is_capture(game: &GameState, to: &Position, piece: &Piece) -> bool {
 
 pub fn is_en_passant_capture(target: &Option<Position>, to: &Position, piece: &Piece) -> bool {
     piece.kind == PieceKind::Pawn && *target != None && *to == target.unwrap()
+}
+
+pub fn is_pawn_advances_two_squares(from: &Position, to: &Position, piece: &Piece) -> bool {
+    if piece.kind != PieceKind::Pawn {
+        return false;
+    }
+    if from.col != to.col {
+        return false;
+    }
+
+    if piece.color == Color::White {
+        return from.row == 6 && to.row == 4;
+    } else {
+        return from.row == 1 && to.row == 3;
+    }
 }
 
 pub fn clear() {

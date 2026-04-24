@@ -8,6 +8,23 @@ use crate::{
 };
 
 pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
+    if san == "draw" || san == "surrend" {
+        let mut kind = ActionKind::Draw;
+        if san == "surrend" {
+            kind = ActionKind::Surrend;
+        }
+
+        return Ok(Action::new(
+            kind,
+            Position::new(0, 0),
+            PieceKind::King,
+            None,
+            false,
+            false,
+            None,
+        ));
+    }
+
     if !Regex::new("^([a-h](x?[a-h])?[1-8](=[QRBN])?|[KQRBN]([a-h]|[1-8]|[a-h][1-8])?x?[a-h][1-8]|O-O(-O)?)[+#]?$").unwrap().is_match(san) {
         return Err(ActionError::new("SAN bad format !"));
     }
@@ -29,8 +46,8 @@ pub fn parse(san: &str, color: Option<Color>) -> Result<Action, ActionError> {
     let re = Regex::new(pattern).ok().unwrap();
     let caps = re.captures(san).unwrap();
     let mut action = Action::new(
-        Position::new(0, 0),
         ActionKind::Move,
+        Position::new(0, 0),
         PieceKind::Pawn,
         None,
         false,
@@ -120,7 +137,7 @@ pub fn to_string(action: &Action) -> String {
     }
 
     format!(
-        "{}{}{}{}{}{}{}",
+        "{}{}{}{}{}{}",
         piece.as_deref().unwrap_or(""),
         disambig.as_deref().unwrap_or(""),
         if action.kind == ActionKind::Capture {
@@ -130,13 +147,12 @@ pub fn to_string(action: &Action) -> String {
         },
         to,
         prom.as_deref().unwrap_or(""),
-        if action.check {
-            "+".to_string()
-        } else {
-            "".to_string()
-        },
-        if action.checkmate {
-            "#".to_string()
+        if action.check || action.checkmate {
+            if action.checkmate {
+                "#".to_string()
+            } else {
+                "+".to_string()
+            }
         } else {
             "".to_string()
         },
@@ -160,8 +176,8 @@ mod tests {
     fn parse_pawn() {
         assert_eq!(
             Action::new(
-                str_to_pos("e4").unwrap(),
                 ActionKind::Move,
+                str_to_pos("e4").unwrap(),
                 PieceKind::Pawn,
                 None,
                 false,
@@ -172,8 +188,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("e4").unwrap(),
                 ActionKind::Move,
+                str_to_pos("e4").unwrap(),
                 PieceKind::Pawn,
                 None,
                 true,
@@ -186,8 +202,8 @@ mod tests {
         let d1 = str_to_pos("d1").unwrap();
         assert_eq!(
             Action::new(
-                e5,
                 ActionKind::Capture,
+                e5,
                 PieceKind::Pawn,
                 Some(DisambigPosition::new(Some(d1.col), None)),
                 false,
@@ -198,8 +214,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("a8").unwrap(),
                 ActionKind::Move,
+                str_to_pos("a8").unwrap(),
                 PieceKind::Pawn,
                 None,
                 false,
@@ -214,8 +230,8 @@ mod tests {
     fn parse_piece() {
         assert_eq!(
             Action::new(
-                str_to_pos("f3").unwrap(),
                 ActionKind::Move,
+                str_to_pos("f3").unwrap(),
                 PieceKind::Knight,
                 None,
                 false,
@@ -228,8 +244,8 @@ mod tests {
         let g1 = str_to_pos("g1").unwrap();
         assert_eq!(
             Action::new(
-                f3,
                 ActionKind::Move,
+                f3,
                 PieceKind::Knight,
                 Some(DisambigPosition::new(Some(g1.col), Some(g1.row))),
                 false,
@@ -240,8 +256,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("f3").unwrap(),
                 ActionKind::Capture,
+                str_to_pos("f3").unwrap(),
                 PieceKind::Knight,
                 None,
                 false,
@@ -252,8 +268,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("f3").unwrap(),
                 ActionKind::Move,
+                str_to_pos("f3").unwrap(),
                 PieceKind::Queen,
                 None,
                 false,
@@ -268,8 +284,8 @@ mod tests {
     fn parse_castling() {
         assert_eq!(
             Action::new(
-                str_to_pos("g1").unwrap(),
                 ActionKind::Kingcastling,
+                str_to_pos("g1").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -280,8 +296,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("c1").unwrap(),
                 ActionKind::Queencastling,
+                str_to_pos("c1").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -292,8 +308,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("g8").unwrap(),
                 ActionKind::Kingcastling,
+                str_to_pos("g8").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -304,8 +320,8 @@ mod tests {
         );
         assert_eq!(
             Action::new(
-                str_to_pos("c8").unwrap(),
                 ActionKind::Queencastling,
+                str_to_pos("c8").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -321,8 +337,8 @@ mod tests {
         assert_eq!(
             "e4".to_string(),
             to_string(&Action::new(
-                str_to_pos("e4").unwrap(),
                 ActionKind::Move,
+                str_to_pos("e4").unwrap(),
                 PieceKind::Pawn,
                 None,
                 false,
@@ -333,8 +349,8 @@ mod tests {
         assert_eq!(
             "e4+".to_string(),
             to_string(&Action::new(
-                str_to_pos("e4").unwrap(),
                 ActionKind::Move,
+                str_to_pos("e4").unwrap(),
                 PieceKind::Pawn,
                 None,
                 true,
@@ -347,8 +363,8 @@ mod tests {
         assert_eq!(
             "dxe5".to_string(),
             to_string(&Action::new(
-                e5,
                 ActionKind::Capture,
+                e5,
                 PieceKind::Pawn,
                 Some(DisambigPosition::new(Some(d1.col), None)),
                 false,
@@ -359,8 +375,8 @@ mod tests {
         assert_eq!(
             "a8=Q".to_string(),
             to_string(&Action::new(
-                str_to_pos("a8").unwrap(),
                 ActionKind::Move,
+                str_to_pos("a8").unwrap(),
                 PieceKind::Pawn,
                 None,
                 false,
@@ -375,8 +391,8 @@ mod tests {
         assert_eq!(
             "Nf3".to_string(),
             to_string(&Action::new(
-                str_to_pos("f3").unwrap(),
                 ActionKind::Move,
+                str_to_pos("f3").unwrap(),
                 PieceKind::Knight,
                 None,
                 false,
@@ -389,8 +405,8 @@ mod tests {
         assert_eq!(
             "Ng1f3".to_string(),
             to_string(&Action::new(
-                f3,
                 ActionKind::Move,
+                f3,
                 PieceKind::Knight,
                 Some(DisambigPosition::new(Some(g1.col), Some(g1.row))),
                 false,
@@ -401,8 +417,8 @@ mod tests {
         assert_eq!(
             "Nxf3".to_string(),
             to_string(&Action::new(
-                str_to_pos("f3").unwrap(),
                 ActionKind::Capture,
+                str_to_pos("f3").unwrap(),
                 PieceKind::Knight,
                 None,
                 false,
@@ -413,8 +429,8 @@ mod tests {
         assert_eq!(
             "Qf3#".to_string(),
             to_string(&Action::new(
-                str_to_pos("f3").unwrap(),
                 ActionKind::Move,
+                str_to_pos("f3").unwrap(),
                 PieceKind::Queen,
                 None,
                 false,
@@ -429,8 +445,8 @@ mod tests {
         assert_eq!(
             "O-O".to_string(),
             to_string(&Action::new(
-                str_to_pos("g1").unwrap(),
                 ActionKind::Kingcastling,
+                str_to_pos("g1").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -441,8 +457,8 @@ mod tests {
         assert_eq!(
             "O-O-O".to_string(),
             to_string(&Action::new(
-                str_to_pos("c1").unwrap(),
                 ActionKind::Queencastling,
+                str_to_pos("c1").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -453,8 +469,8 @@ mod tests {
         assert_eq!(
             "O-O".to_string(),
             to_string(&Action::new(
-                str_to_pos("g8").unwrap(),
                 ActionKind::Kingcastling,
+                str_to_pos("g8").unwrap(),
                 PieceKind::King,
                 None,
                 false,
@@ -465,8 +481,8 @@ mod tests {
         assert_eq!(
             "O-O-O".to_string(),
             to_string(&Action::new(
-                str_to_pos("c8").unwrap(),
                 ActionKind::Queencastling,
+                str_to_pos("c8").unwrap(),
                 PieceKind::King,
                 None,
                 false,

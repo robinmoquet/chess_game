@@ -9,6 +9,7 @@ use crate::{
         bishop::is_check_bishop, king::is_check_king, knight::is_check_knight, pawn::is_check_pawn,
         rook::is_check_rook,
     },
+    move_compute::all_move_possibilities,
     types::{Color, GameState, Piece, PieceKind, Squares},
     utils::find_piece,
 };
@@ -26,6 +27,13 @@ pub fn is_check(squares: &Squares, color: &Color) -> bool {
         || is_check_king(&king_pos.unwrap(), color, squares)
 }
 
-pub fn _is_checkmate(_game: &GameState) -> bool {
-    todo!("checkmate logical")
+pub fn is_checkmate(game: &GameState, color: &Color) -> bool {
+    let moves = all_move_possibilities(game, color);
+    for (_, possibilities) in moves {
+        if possibilities.len() != 0 {
+            return false;
+        }
+    }
+
+    true
 }
