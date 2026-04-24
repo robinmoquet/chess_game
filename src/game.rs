@@ -126,6 +126,7 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
         return (Err(e), game);
     }
     let from = from.unwrap();
+    game.status = GameStatus::InProgress;
 
     // Allow the user to provide a move action to capture a piece
     // ex: 1. e4 d5 2. d5 -> 1. e4 d5 2. exd5
@@ -175,6 +176,7 @@ pub fn do_move(mut action: Action, mut game: GameState) -> (Result<(), ActionErr
 
     if is_check(&game.board.squares, &game.current_player) {
         action.check = true;
+        game.status = GameStatus::Check(game.current_player);
         if is_checkmate(&game, &game.current_player) {
             action.checkmate = true;
             game.status = GameStatus::Checkmate(game.current_player);

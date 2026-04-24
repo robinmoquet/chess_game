@@ -78,13 +78,13 @@ pub fn print_pgn_content(game: &GameState) -> String {
         .enumerate()
         .map(|(i, a)| {
             if i % 2 == 0 {
-                format!("{}.{} ", (i / 2) + 1, san::to_string(a))
+                format!("{}.{}", (i / 2) + 1, san::to_string(a))
             } else {
-                format!("{} ", san::to_string(a))
+                format!("{}", san::to_string(a))
             }
         })
         .collect::<Vec<String>>()
-        .join("");
+        .join(" ");
     format!("{}", pgn_content_str)
 }
 
@@ -155,6 +155,9 @@ pub fn print_piece(piece: &Piece) -> &'static str {
 }
 
 pub fn print_game_result(game: &GameState) -> &str {
+    if game.status == GameStatus::InProgress {
+        return "";
+    }
     let mut status = "1/2-1/2";
     if let GameStatus::Checkmate(color) = game.status {
         if color == Color::White {
